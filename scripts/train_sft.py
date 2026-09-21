@@ -17,7 +17,7 @@ LOSS_MODE_COT_ANSWER_WEIGHTED = "cot_answer_weighted"
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="使用 TRL + PEFT 对 Qwen2.5-3B-Instruct 进行普通 LoRA SFT。"
+        description="LoRA supervised fine-tuning of a chat model with TRL + PEFT (bf16 base, completion-only loss)."
     )
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--train-file", default=DEFAULT_TRAIN_FILE)
@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument(
         "--init-adapter",
         default=None,
-        help="从已有 LoRA adapter 继续训练（新的优化器与学习率调度）；设置后忽略 --lora-r/alpha/dropout。",
+        help="continue training from an existing LoRA adapter (fresh optimizer and schedule); --lora-r/alpha/dropout are ignored.",
     )
     parser.add_argument("--report-to", default="none")
     parser.add_argument(
@@ -58,8 +58,8 @@ def parse_args():
         choices=(LOSS_MODE_COMPLETION, LOSS_MODE_COT_ANSWER_WEIGHTED),
         default=LOSS_MODE_COMPLETION,
         help=(
-            "completion 使用原始 completion token 平均 loss；"
-            "cot_answer_weighted 分别计算解析与答案区域平均 loss。"
+            "completion: mean loss over completion tokens; "
+            "cot_answer_weighted: separate means for the explanation and the answer span."
         ),
     )
     parser.add_argument("--cot-loss-weight", type=float, default=0.2)
@@ -68,7 +68,7 @@ def parse_args():
         "--loss-logit-chunk-size",
         type=int,
         default=256,
-        help="加权 loss 每次投影到词表的监督 token 数。",
+        help="supervised tokens projected to the vocabulary per chunk in weighted-loss mode.",
     )
     parser.add_argument(
         "--gradient-checkpointing",
@@ -78,7 +78,7 @@ def parse_args():
     parser.add_argument(
         "--check-only",
         action="store_true",
-        help="只校验数据格式，不加载模型、不启动训练。",
+        help="validate the data files only; do not load the model or train.",
     )
     return parser.parse_args()
 
@@ -100,7 +100,7 @@ def validate_positive_args(args):
     )
     for name in positive_int_names:
         if getattr(args, name) < 1:
-            raise ValueError(f"{name} 必须大于 0")
+            raise ValueError(f"{name} must be greater than 0")
 
     nonnegative_int_names = (
         "max_train_samples",
@@ -110,38 +110,38 @@ def validate_positive_args(args):
     )
     for name in nonnegative_int_names:
         if getattr(args, name) < 0:
-            raise ValueError(f"{name} 不能小于 0")
+            raise ValueError(f"{name} must not be negative")
 
     if args.num_train_epochs <= 0:
-        raise ValueError("num_train_epochs 必须大于 0")
+        raise ValueError("num_train_epochs must be greater than 0")
     if args.learning_rate <= 0:
-        raise ValueError("learning_rate 必须大于 0")
+        raise ValueError("learning_rate must be greater than 0")
     if not 0 <= args.warmup_ratio < 1:
-        raise ValueError("warmup_ratio 必须在 [0, 1) 之间")
+        raise ValueError("warmup_ratio must be in [0, 1)")
     if not 0 <= args.lora_dropout < 1:
-        raise ValueError("lora_dropout 必须在 [0, 1) 之间")
+        raise ValueError("lora_dropout must be in [0, 1)")
     if args.init_adapter and args.resume_from_checkpoint:
-        raise ValueError("--init-adapter 与 --resume-from-checkpoint 不能同时使用")
+        raise ValueError("--init-adapter and --resume-from-checkpoint are mutually exclusive")
     if args.loss_mode == LOSS_MODE_COT_ANSWER_WEIGHTED:
         if args.packing:
-            raise ValueError("加权解析/答案 loss 不支持 --packing")
+            raise ValueError("the weighted explanation/answer loss does not support --packing")
         if args.cot_loss_weight < 0 or args.answer_loss_weight < 0:
-            raise ValueError("解析和答案 loss 权重不能为负数")
+            raise ValueError("loss weights must not be negative")
         if not math.isclose(
             args.cot_loss_weight + args.answer_loss_weight,
             1.0,
             rel_tol=0.0,
             abs_tol=1e-8,
         ):
-            raise ValueError("解析和答案 loss 权重之和必须等于 1")
+            raise ValueError("the explanation and answer loss weights must sum to 1")
         if args.answer_loss_weight == 0:
-            raise ValueError("答案 loss 权重必须大于 0")
+            raise ValueError("the answer loss weight must be greater than 0")
 
 
 def validate_messages_file(path, require_weighted_answer=False):
-    """完整检查 JSONL schema；返回样本数。"""
+    """Validate the JSONL schema of a whole file; returns the number of rows."""
     if not path.exists():
-        raise FileNotFoundError(f"找不到数据文件: {path}")
+        raise FileNotFoundError(f"data file not found: {path}")
 
     count = 0
     with path.open("r", encoding="utf-8") as fin:
@@ -149,49 +149,49 @@ def validate_messages_file(path, require_weighted_answer=False):
             try:
                 record = json.loads(line)
             except json.JSONDecodeError as exc:
-                raise ValueError(f"{path} 第 {line_number} 行不是合法 JSON") from exc
+                raise ValueError(f"{path} line {line_number} is not valid JSON") from exc
 
             if set(record) != {"messages"}:
                 raise ValueError(
-                    f"{path} 第 {line_number} 行必须且只能包含 messages"
+                    f"{path} line {line_number} must contain exactly one key, messages"
                 )
 
             messages = record["messages"]
             if not isinstance(messages, list) or len(messages) < 2:
-                raise ValueError(f"{path} 第 {line_number} 行 messages 不合法")
+                raise ValueError(f"{path} line {line_number} has invalid messages")
             if messages[-1].get("role") != "assistant":
                 raise ValueError(
-                    f"{path} 第 {line_number} 行最后一条消息必须是 assistant"
+                    f"{path} line {line_number}: the last message must be from the assistant"
                 )
             if not any(message.get("role") == "user" for message in messages[:-1]):
-                raise ValueError(f"{path} 第 {line_number} 行缺少 user 消息")
+                raise ValueError(f"{path} line {line_number} has no user message")
 
             for message in messages:
                 if message.get("role") not in {"system", "user", "assistant"}:
                     raise ValueError(
-                        f"{path} 第 {line_number} 行包含不支持的 role"
+                        f"{path} line {line_number} contains an unsupported role"
                     )
                 content = message.get("content")
                 if not isinstance(content, str) or not content.strip():
                     raise ValueError(
-                        f"{path} 第 {line_number} 行存在空 content"
+                        f"{path} line {line_number} has empty content"
                     )
             if require_weighted_answer:
                 assistant = messages[-1]["content"]
                 if not re.search(r"\n答案：[A-Z]+\s*$", assistant):
                     raise ValueError(
-                        f"{path} 第 {line_number} 行 assistant 必须以"
-                        "换行后的‘答案：字母’结尾，才能使用加权 loss"
+                        f"{path} line {line_number}: the assistant message must end with "
+                        "a final line of the form 答案：<letters> to use the weighted loss"
                     )
             count += 1
 
     if count == 0:
-        raise ValueError(f"数据文件为空: {path}")
+        raise ValueError(f"data file is empty: {path}")
     return count
 
 
 def messages_to_prompt_completion(example):
-    """把 messages 拆开，使 TRL 只对 assistant completion 计算 loss。"""
+    """Split messages into prompt and completion so that TRL computes the loss on the assistant completion only."""
     messages = example["messages"]
     return {
         "prompt": messages[:-1],
@@ -238,7 +238,7 @@ def report_length_stats(dataset, tokenizer, max_length, sample_count, seed):
         "over_max_length": truncated,
         "over_max_length_ratio": truncated / sample_count,
     }
-    print("Token 长度抽样:", json.dumps(stats, ensure_ascii=False))
+    print("token length sample:", json.dumps(stats, ensure_ascii=False))
     return stats
 
 
@@ -249,9 +249,9 @@ def build_cot_answer_masks(
     special_token_ids,
     torch,
 ):
-    """按最后一个已监督答案标记划分非答案与答案正文 token。"""
+    """Split supervised tokens into non-answer and answer spans at the last supervised answer marker."""
     if input_ids.ndim != 2 or labels.shape != input_ids.shape:
-        raise ValueError("input_ids 和 labels 必须是形状相同的二维张量")
+        raise ValueError("input_ids and labels must be 2-D tensors of the same shape")
 
     marker = torch.as_tensor(
         marker_ids,
@@ -261,7 +261,7 @@ def build_cot_answer_masks(
     marker_length = int(marker.numel())
     sequence_length = int(input_ids.shape[1])
     if marker_length == 0 or marker_length > sequence_length:
-        raise ValueError("答案标记 token 序列为空或长于当前 batch")
+        raise ValueError("the answer-marker token sequence is empty or longer than the batch")
 
     input_windows = input_ids.unfold(1, marker_length, 1)
     label_windows = labels.unfold(1, marker_length, 1)
@@ -274,9 +274,9 @@ def build_cot_answer_masks(
             (~has_marker).nonzero(as_tuple=False).flatten().tolist()
         )
         raise ValueError(
-            "当前 batch 的 assistant completion 中找不到已监督答案标记 "
-            f"{DEFAULT_ANSWER_MARKER!r}，batch 行号: {missing_rows}。"
-            "样本可能被 max_length 截断，或标签格式不合法。"
+            "no supervised answer marker found in the assistant completion of this batch: "
+            f"{DEFAULT_ANSWER_MARKER!r}, batch rows: {missing_rows}. "
+            "The sample may have been truncated by max_length, or the target format is invalid."
         )
 
     window_positions = torch.arange(
@@ -323,11 +323,11 @@ def build_cot_answer_masks(
             .tolist()
         )
         raise ValueError(
-            "答案标记后没有可训练的答案正文 token，batch 行号: "
+            "no trainable answer tokens after the answer marker, batch rows: "
             f"{missing_rows}"
         )
     if not bool(cot_mask.any(dim=1).all()):
-        raise ValueError("至少一条样本没有可训练的解析 token")
+        raise ValueError("at least one sample has no trainable explanation tokens")
     return cot_mask, answer_mask
 
 
@@ -340,7 +340,7 @@ def make_weighted_sft_trainer_class(
     answer_loss_weight,
     logit_chunk_size,
 ):
-    """创建按样本分别归一化解析与答案 loss 的 SFTTrainer。"""
+    """Build an SFTTrainer that normalises the explanation and answer losses separately per sample."""
 
     class CotAnswerWeightedSFTTrainer(sft_trainer_class):
         def compute_loss(
@@ -352,7 +352,7 @@ def make_weighted_sft_trainer_class(
         ):
             del num_items_in_batch
             if "labels" not in inputs or "input_ids" not in inputs:
-                raise ValueError("加权 loss 需要 input_ids 和 labels")
+                raise ValueError("the weighted loss needs input_ids and labels")
 
             labels = inputs["labels"]
             input_ids = inputs["input_ids"]
@@ -374,8 +374,8 @@ def make_weighted_sft_trainer_class(
             lm_head = causal_lm.get_output_embeddings()
             if decoder is None or lm_head is None:
                 raise TypeError(
-                    "加权 loss 当前要求 Qwen/Hugging Face CausalLM 提供"
-                    "内部 decoder 和 output embeddings"
+                    "the weighted loss requires a Hugging Face CausalLM that exposes "
+                    "its inner decoder and output embeddings"
                 )
 
             decoder_inputs = {
@@ -396,9 +396,9 @@ def make_weighted_sft_trainer_class(
             cot_counts = shifted_cot_mask.sum(dim=1)
             answer_counts = shifted_answer_mask.sum(dim=1)
             if not bool((cot_counts > 0).all()):
-                raise ValueError("因 causal shift 导致至少一条样本没有解析 token")
+                raise ValueError("after the causal shift at least one sample has no explanation tokens")
             if not bool((answer_counts > 0).all()):
-                raise ValueError("因 causal shift 导致至少一条样本没有答案 token")
+                raise ValueError("after the causal shift at least one sample has no answer tokens")
 
             token_weights = torch.zeros_like(
                 shift_labels,
@@ -458,11 +458,11 @@ def main():
         validation_path,
         require_weighted_answer=use_weighted_loss,
     )
-    print(f"训练集格式检查通过: {train_count} 条")
-    print(f"验证集格式检查通过: {validation_count} 条")
+    print(f"training file validated: {train_count} rows")
+    print(f"validation file validated: {validation_count} rows")
 
     if args.check_only:
-        print("check-only 已启用，不加载模型，不启动训练。")
+        print("check-only: the model is not loaded and no training starts.")
         return
 
     try:
@@ -478,11 +478,11 @@ def main():
         from trl import SFTConfig, SFTTrainer
     except ImportError as exc:
         raise RuntimeError(
-            "缺少 SFT 依赖，请先执行: pip install -r requirements-sft.txt"
+            "missing training dependencies; run: pip install -r requirements.txt"
         ) from exc
 
     if not torch.cuda.is_available():
-        raise RuntimeError("LoRA 训练需要可用的 NVIDIA CUDA GPU")
+        raise RuntimeError("LoRA training requires a CUDA GPU")
 
     use_bf16 = bool(torch.cuda.is_bf16_supported())
     use_fp16 = not use_bf16
@@ -491,18 +491,18 @@ def main():
     use_tf32 = major_capability >= 8
 
     print(f"GPU: {torch.cuda.get_device_name(0)}")
-    print("训练方式: 普通 LoRA（基础模型不量化）")
-    print(f"计算精度: {'bf16' if use_bf16 else 'fp16'}")
+    print("method: LoRA on an unquantised base model")
+    print(f"compute dtype: {'bf16' if use_bf16 else 'fp16'}")
     if use_weighted_loss:
         print(
-            "训练 loss: "
-            f"{args.cot_loss_weight:.3f} × mean(解析/非答案 token loss) + "
-            f"{args.answer_loss_weight:.3f} × mean(答案正文 token loss)"
+            "training loss: "
+            f"{args.cot_loss_weight:.3f} x mean(explanation token loss) + "
+            f"{args.answer_loss_weight:.3f} x mean(answer token loss)"
         )
     else:
-        print("训练 loss: completion token 平均 loss")
+        print("training loss: mean over completion tokens")
     print(
-        "单卡有效 batch size: "
+        "effective batch size on one GPU: "
         f"{args.per_device_train_batch_size * args.gradient_accumulation_steps}"
     )
 
@@ -536,7 +536,7 @@ def main():
         add_special_tokens=False,
     )
     if use_weighted_loss and not marker_ids:
-        raise ValueError("tokenizer 无法编码答案标记")
+        raise ValueError("the tokenizer cannot encode the answer marker")
 
     if use_weighted_loss:
         length_stats = {
@@ -562,8 +562,8 @@ def main():
         }
         if overlength_splits:
             raise ValueError(
-                "加权 loss 要求末行答案不可被截断；请提高 --max-length。"
-                f"超长样本: {overlength_splits}"
+                "the weighted loss needs the final answer line untruncated; raise --max-length. "
+                f"over-length samples: {overlength_splits}"
             )
     else:
         length_stats = report_length_stats(
@@ -576,7 +576,7 @@ def main():
 
     map_kwargs = {
         "remove_columns": ["messages"],
-        "desc": "拆分 prompt/completion",
+        "desc": "splitting prompt / completion",
     }
     if args.dataset_num_proc > 1:
         map_kwargs["num_proc"] = args.dataset_num_proc
@@ -700,7 +700,7 @@ def main():
         from peft import PeftModel
         from transformers import AutoModelForCausalLM
 
-        print(f"从已有 adapter 继续训练: {args.init_adapter}（忽略 --lora-r/alpha/dropout）")
+        print(f"continuing from adapter: {args.init_adapter} (--lora-r/alpha/dropout ignored)")
         base_model = AutoModelForCausalLM.from_pretrained(
             args.model,
             dtype=compute_dtype,
@@ -742,7 +742,7 @@ def main():
     final_adapter_dir = output_dir / "final_adapter"
     trainer.save_model(str(final_adapter_dir))
     tokenizer.save_pretrained(str(final_adapter_dir))
-    print(f"训练完成，最终 LoRA adapter: {final_adapter_dir}")
+    print(f"training finished; final LoRA adapter: {final_adapter_dir}")
 
 
 if __name__ == "__main__":

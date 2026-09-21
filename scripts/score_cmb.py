@@ -30,7 +30,7 @@ def extract_records(data):
             if isinstance(value, list):
                 return value
 
-        # 兼容 {"1": {...}, "2": {...}} 形式
+        # also accept the {"1": {...}, "2": {...}} layout
         if all(isinstance(v, dict) for v in data.values()):
             records = []
             for key, value in data.items():
@@ -39,7 +39,7 @@ def extract_records(data):
                 records.append(item)
             return records
 
-    raise ValueError("无法识别 JSON 记录结构")
+    raise ValueError("unrecognised JSON record structure")
 
 
 def normalize_answer(value):
@@ -60,7 +60,7 @@ def normalize_answer(value):
 
     letters = re.findall(r"[A-G]", text)
 
-    # 去重并固定为 A、B、C……顺序
+    # deduplicate and fix the order to A, B, C, ...
     selected = set(letters)
     return "".join(
         letter for letter in "ABCDEFG"
@@ -91,7 +91,7 @@ def load_ground_truth(path):
     answers = {}
 
     if isinstance(data, dict):
-        # 先检查是否是 {"data": [...]} 等结构
+        # check for wrappers such as {"data": [...]} first
         for key in ("data", "test", "answers", "records", "items"):
             if isinstance(data.get(key), list):
                 data = data[key]
@@ -111,7 +111,7 @@ def load_ground_truth(path):
         return answers
 
     if isinstance(data, dict):
-        # 兼容 {"1": "A", "2": "BCD"}
+        # also accept {"1": "A", "2": "BCD"}
         for qid, value in data.items():
             if isinstance(value, dict):
                 answer = get_answer_from_item(value)
@@ -123,7 +123,7 @@ def load_ground_truth(path):
 
         return answers
 
-    raise ValueError("无法识别标准答案结构")
+    raise ValueError("unrecognised answer-file structure")
 
 
 def load_predictions(path):
@@ -134,7 +134,7 @@ def load_predictions(path):
         qid = str(item.get("id", index + 1))
 
         if qid in predictions:
-            raise ValueError(f"{path} 中存在重复 ID：{qid}")
+            raise ValueError(f"duplicate id in {path}: {qid}")
 
         predictions[qid] = normalize_answer(
             item.get("model_answer", item.get("answer", ""))
@@ -168,7 +168,7 @@ def group_statistics(rows, field):
     groups = defaultdict(list)
 
     for row in rows:
-        group_name = str(row.get(field) or "未知")
+        group_name = str(row.get(field) or "unknown")
         groups[group_name].append(row)
 
     output = []
@@ -261,14 +261,14 @@ def main():
 
     if missing_base:
         raise ValueError(
-            f"原始模型缺少 {len(missing_base)} 道题，"
-            f"例如：{missing_base[:10]}"
+            f"reference predictions are missing {len(missing_base)} questions, "
+            f"e.g. {missing_base[:10]}"
         )
 
     if missing_sft:
         raise ValueError(
-            f"SFT 模型缺少 {len(missing_sft)} 道题，"
-            f"例如：{missing_sft[:10]}"
+            f"candidate predictions are missing {len(missing_sft)} questions, "
+            f"e.g. {missing_sft[:10]}"
         )
 
     rows = []
@@ -286,10 +286,10 @@ def main():
         rows.append(
             {
                 "id": qid,
-                "exam_type": question.get("exam_type", "未知"),
-                "exam_class": question.get("exam_class", "未知"),
+                "exam_type": question.get("exam_type", "unknown"),
+                "exam_class": question.get("exam_class", "unknown"),
                 "question_type": question.get(
-                    "question_type", "未知"
+                    "question_type", "unknown"
                 ),
                 "question": question.get("question", ""),
                 "gold_answer": gold_answer,
@@ -408,33 +408,33 @@ def main():
     )
 
     print("=" * 65)
-    print(f"总题数：{total}")
+    print(f"questions: {total}")
     print()
     print(
-        f"原始模型：{base_correct_count}/{total} "
+        f"reference: {base_correct_count}/{total} "
         f"= {base_accuracy:.4%}"
     )
     print(
-        f"SFT 模型：{sft_correct_count}/{total} "
+        f"candidate: {sft_correct_count}/{total} "
         f"= {sft_accuracy:.4%}"
     )
     print()
     print(
-        "准确率变化："
-        f"{(sft_accuracy - base_accuracy) * 100:+.4f} 个百分点"
+        "accuracy change: "
+        f"{(sft_accuracy - base_accuracy) * 100:+.4f} points"
     )
-    print(f"SFT 新增答对：{len(improved_rows)}")
-    print(f"SFT 导致退步：{len(regressed_rows)}")
-    print(f"两者都答对：{both_correct}")
-    print(f"两者都答错：{both_wrong}")
+    print(f"newly correct: {len(improved_rows)}")
+    print(f"newly wrong: {len(regressed_rows)}")
+    print(f"both correct: {both_correct}")
+    print(f"both wrong: {both_wrong}")
 
     if pvalue is not None:
-        print(f"McNemar 精确检验 p-value：{pvalue:.6g}")
+        print(f"exact McNemar p-value: {pvalue:.6g}")
     else:
-        print("未安装 scipy，暂未计算显著性检验。")
+        print("scipy is not installed; significance test skipped.")
 
     print("=" * 65)
-    print(f"结果目录：{out_dir}")
+    print(f"results written to: {out_dir}")
 
 
 if __name__ == "__main__":

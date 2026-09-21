@@ -17,8 +17,8 @@ MAX_REMOVAL_EXAMPLES = 10
 def parse_args():
     parser = argparse.ArgumentParser(
         description=(
-            "删除 CMExam 仅答案 SFT 中与 CMB-test 规范化题干重合的样本，"
-            "并更新数据报告。"
+            "Remove CMExam direct-answer SFT rows whose normalised stem also occurs in CMB-test, "
+            "and update the data report."
         )
     )
     parser.add_argument("--cmb-test-file", required=True)
@@ -37,7 +37,7 @@ def parse_args():
     parser.add_argument(
         "--check-only",
         action="store_true",
-        help="只统计将被删除的样本，不改写任何文件。",
+        help="only count the rows that would be removed; no file is rewritten.",
     )
     return parser.parse_args()
 
@@ -66,13 +66,13 @@ def load_cmb_questions(path):
     with path.open("r", encoding="utf-8") as input_file:
         rows = json.load(input_file)
     if not isinstance(rows, list):
-        raise ValueError("CMB-test 根节点必须是 JSON 数组")
+        raise ValueError("CMB-test root must be a JSON array")
 
     key_to_ids = {}
     empty_questions = 0
     for index, row in enumerate(rows):
         if not isinstance(row, dict):
-            raise ValueError(f"CMB-test 第 {index + 1} 条不是对象")
+            raise ValueError(f"CMB-test item {index + 1} is not an object")
         question_key = normalize_question(row.get("question"))
         if not question_key:
             empty_questions += 1
@@ -86,7 +86,7 @@ def load_cmb_questions(path):
 def extract_question(record, path, line_number):
     messages = record.get("messages")
     if not isinstance(messages, list):
-        raise ValueError(f"{path}:{line_number} 缺少 messages 数组")
+        raise ValueError(f"{path}:{line_number} has no messages array")
     user_messages = [
         message
         for message in messages
@@ -94,17 +94,17 @@ def extract_question(record, path, line_number):
     ]
     if len(user_messages) != 1:
         raise ValueError(
-            f"{path}:{line_number} user message 数量不是 1"
+            f"{path}:{line_number} must contain exactly one user message"
         )
     content = user_messages[0].get("content")
     if not isinstance(content, str):
-        raise ValueError(f"{path}:{line_number} user content 不是字符串")
+        raise ValueError(f"{path}:{line_number} user content is not a string")
     match = QUESTION_PATTERN.search(content)
     if match is None:
-        raise ValueError(f"{path}:{line_number} 无法提取题干")
+        raise ValueError(f"{path}:{line_number} question stem could not be extracted")
     question = match.group(1).strip()
     if not question:
-        raise ValueError(f"{path}:{line_number} 题干为空")
+        raise ValueError(f"{path}:{line_number} empty question stem")
     return question
 
 
@@ -125,7 +125,7 @@ def inspect_split(path, blocked_questions, cmb_ids_by_question):
             try:
                 record = json.loads(raw_line.decode("utf-8"))
             except (UnicodeDecodeError, json.JSONDecodeError) as error:
-                raise ValueError(f"{path}:{line_number} 不是有效 JSON") from error
+                raise ValueError(f"{path}:{line_number} is not valid JSON") from error
 
             question = extract_question(record, path, line_number)
             question_key = normalize_question(question)
@@ -149,7 +149,7 @@ def inspect_split(path, blocked_questions, cmb_ids_by_question):
             output_hasher.update(raw_line)
 
     if input_rows == 0:
-        raise ValueError(f"{path} 是空文件")
+        raise ValueError(f"{path} is empty")
 
     return {
         "path": str(path),
@@ -221,7 +221,7 @@ def build_report(
         "unique_normalized_questions": len(cmb_questions),
         "empty_questions": empty_cmb_questions,
         "sha256": sha256_file(cmb_path),
-        "usage": "只读取题干做排除，不读取或使用 CMB-test 答案。",
+        "usage": "only question stems are read for exclusion; CMB-test answers are never read or used.",
     }
     report["cmb_decontamination"] = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -239,7 +239,7 @@ def build_report(
         "cmb_duplicate_key"
     ] = "NFKC + lowercase + remove whitespace and Unicode punctuation(question)"
     report["cleaning_policy"]["cmb_near_duplicates"] = (
-        "本次不自动删除；字符级 MinHash 阈值校准和人工复核后另行处理。"
+        "not removed automatically here; handled separately after MinHash threshold calibration and manual review."
     )
 
     for split_name, stats in split_stats.items():
@@ -255,7 +255,7 @@ def main():
     report_path = Path(args.report_file)
     for path in (cmb_path, train_path, validation_path, report_path):
         if not path.is_file():
-            raise FileNotFoundError(f"找不到文件: {path}")
+            raise FileNotFoundError(f"file not found: {path}")
 
     cmb_rows, cmb_questions, empty_cmb_questions = load_cmb_questions(
         cmb_path

@@ -23,7 +23,7 @@ def load_json_records(path: str) -> list[dict[str, Any]]:
             if isinstance(value, list):
                 return value
 
-    raise ValueError(f"无法识别数据结构：{path}")
+    raise ValueError(f"unrecognised data structure: {path}")
 
 
 def get_question_id(item: dict[str, Any], index: int) -> Any:
@@ -42,7 +42,7 @@ def get_options(item: dict[str, Any]) -> list[tuple[str, str]]:
             for i, value in enumerate(options)
         ]
 
-    raise ValueError(f"题目缺少 option/options 字段：{item}")
+    raise ValueError(f"question has no option/options field: {item}")
 
 
 def build_prompt(item: dict[str, Any]) -> str:
@@ -113,7 +113,7 @@ def extract_choice(
 
     selected = set(letters)
 
-    # 多选答案统一整理为 ABC 这种顺序，避免输出 CBA 导致严格匹配失败。
+    # Multi-answer outputs are normalised to sorted order (ABC), so that "CBA" does not fail the exact match.
     return "".join(
         letter
         for letter in valid_letters
@@ -151,7 +151,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if not torch.cuda.is_available():
-        raise RuntimeError("没有检测到可用 CUDA GPU。")
+        raise RuntimeError("no CUDA GPU available.")
 
     dtype = (
         torch.bfloat16
@@ -171,8 +171,8 @@ def main() -> None:
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    print(f"加载基础模型：{args.base_model}")
-    print(f"计算精度：{dtype}")
+    print(f"loading base model: {args.base_model}")
+    print(f"compute dtype: {dtype}")
 
     model = AutoModelForCausalLM.from_pretrained(
         args.base_model,
@@ -184,14 +184,14 @@ def main() -> None:
     )
 
     if args.adapter:
-        print(f"加载 LoRA Adapter：{args.adapter}")
+        print(f"loading LoRA adapter: {args.adapter}")
         model = PeftModel.from_pretrained(
             model,
             args.adapter,
             local_files_only=True,
         )
     else:
-        print("未加载 Adapter，将评测原始模型。")
+        print("no adapter given; evaluating the base model.")
 
     model.eval()
 
@@ -211,7 +211,7 @@ def main() -> None:
             for item in predictions
         }
 
-        print(f"断点续跑：已存在 {len(predictions)} 条结果。")
+        print(f"resuming: {len(predictions)} predictions already present.")
     elif detail_path.exists():
         detail_path.unlink()
 
@@ -226,8 +226,8 @@ def main() -> None:
     if args.limit > 0:
         pending = pending[:args.limit]
 
-    print(f"数据总量：{len(records)}")
-    print(f"本次待评测：{len(pending)}")
+    print(f"questions: {len(records)}")
+    print(f"to evaluate in this run: {len(pending)}")
     print(f"batch size：{args.batch_size}")
 
     input_device = next(model.parameters()).device
@@ -346,10 +346,10 @@ def main() -> None:
         if not item.get("model_answer")
     )
 
-    print(f"完成：{len(predictions)} 条")
-    print(f"无法抽取答案：{empty_count} 条")
-    print(f"答案文件：{output_path}")
-    print(f"详细输出：{detail_path}")
+    print(f"done: {len(predictions)} predictions")
+    print(f"outputs with no extractable answer: {empty_count}")
+    print(f"answers written to: {output_path}")
+    print(f"details written to: {detail_path}")
 
 
 if __name__ == "__main__":

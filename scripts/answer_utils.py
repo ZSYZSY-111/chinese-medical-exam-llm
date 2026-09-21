@@ -49,7 +49,7 @@ _EXPLANATION_WITH_ANSWER_PATTERN = re.compile(
 
 
 def normalize_answer(raw_answer, valid_letters=None):
-    """规范化答案集合；非法字母、重复字母和空答案返回 None。"""
+    """Normalise an answer to sorted unique option letters; invalid letters, repeated letters and empty answers give None."""
     if not isinstance(raw_answer, str):
         return None
 
@@ -68,7 +68,7 @@ def normalize_answer(raw_answer, valid_letters=None):
 
 
 def completion_to_text(completion):
-    """同时兼容 TRL 的普通文本 completion 和对话式 completion。"""
+    """Accept both plain-text completions and chat-style completion lists."""
     if isinstance(completion, str):
         return completion
     if not isinstance(completion, list) or len(completion) != 1:
@@ -81,7 +81,7 @@ def completion_to_text(completion):
 
 
 def extract_predicted_answer(completion, valid_letters=None):
-    """提取唯一答案；额外文字允许存在，但多个答案标签会被拒绝。"""
+    """Extract the single answer; extra text is tolerated, several answer labels are rejected."""
     text = completion_to_text(completion).replace("\r\n", "\n").strip()
     if not text:
         return None
@@ -172,14 +172,14 @@ def _extract_labeled_answer(text, valid_letters):
 
 
 def parse_completion(completion, mode, valid_letters, lenient_answer=False):
-    """解析一条输出；返回答案、是否严格合规、是否写了解析、解析字数。
+    """Parse one model output; returns the answer, strict-format flag, whether an explanation was written, and its length.
 
-    direct：答案接受纯字母（也容忍单个“答案：X”行），严格格式要求只有纯字母。
-    cot / adaptive：答案只接受唯一一行“答案：X”；lenient_answer=True 时
-    （格式热身阶段）纯字母输出也计入答案，但格式奖励仍为 0。
+    direct: bare letters are accepted (a single "答案：X" line is tolerated); the strict format is bare letters only.
+    cot / adaptive: only a single "答案：X" line counts; with lenient_answer=True bare letters also count as an answer,
+    while the output is still not considered strictly formatted.
     """
     if mode not in MODES:
-        raise ValueError(f"未知输出模式: {mode!r}")
+        raise ValueError(f"unknown output mode: {mode!r}")
     text = completion_to_text(completion).replace("\r\n", "\n").strip()
     result = {
         "text": text,

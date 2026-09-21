@@ -1,15 +1,16 @@
-"""训练前算账：估计 RL 在当前策略上的收益上限，并检查格式/位置偏置。
+"""Validation diagnostics for a model on a messages-format JSONL file.
 
-对一份 messages JSONL（建议用内部 validation 抽样 1,000～2,000 题）做四件事：
-  1. greedy pass@1（主口径）
-  2. 采样 k 次：pass@k（任一正确）、SC@k（多数投票正确）、平均采样准确率
-     → pass@k − pass@1 就是“锐化型”RL 的理论收益上限
-  3. 受限打分（仅 direct 模式、单选题）：直接比较 A–E 字母 token 的 logit
-     → 受限准确率 − 自由生成准确率 = 格式/解码损耗
-  4. 选项乱序一致性：同一题 P 个排列下 greedy 答案映射回原字母后是否一致
-     → 一致性越低，乱序增强和 RL 的方差降低空间越大
+Four measurements, each optional:
+  1. greedy accuracy (the main number; exact letter-set match)
+  2. k sampled answers per question: pass@k (any correct), SC@k (majority vote correct), mean sampled accuracy
+     -> pass@k - pass@1 bounds what sharpening the current policy could still gain
+  3. constrained scoring (direct mode, single-answer questions): compare the logits of the option-letter tokens
+     -> constrained accuracy - generated accuracy = the loss caused by format and decoding
+  4. option-permutation consistency: is the greedy answer the same, after mapping back, under P option orders?
+     -> low consistency means position dependence that shuffle augmentation can remove
 
-输出 headroom_records.jsonl（逐题）和 headroom_report.json（总体与切片汇总）。
+Writes headroom_records.jsonl (one row per question) and headroom_report.json (overall and per-slice summary).
+Use --skip-sampling --skip-shuffle --skip-constrained for a plain greedy validation score.
 """
 
 import argparse
@@ -57,27 +58,27 @@ SLICE_NAMES = ("multi_choice", "negation", "case", "calc", "long_stem")
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="估计 RL 收益上限与偏置。")
+    parser = argparse.ArgumentParser(description="Validation accuracy and diagnostics.")
     parser.add_argument("--model", default="Qwen/Qwen2.5-3B-Instruct")
     parser.add_argument("--adapter", default=None)
     parser.add_argument("--tokenizer", default=None)
     parser.add_argument("--input-file", default=DEFAULT_INPUT_FILE)
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--mode", choices=MODES, default=MODE_DIRECT)
-    parser.add_argument("--type-hint", action="store_true", help="prompt 里加题型提示（本题是单项/多项选择题），与官方评测 prompt 对齐；默认按 gold 字母数推断")
-    parser.add_argument("--type-hint-file", default=None, help="CMB 官方结构 json（id=sample_id，含 question_type），有则优先用数据集题型")
+    parser.add_argument("--type-hint", action="store_true", help="add a question-type hint to the prompt, aligned with the official evaluation prompt; inferred from the number of reference letters by default")
+    parser.add_argument("--type-hint-file", default=None, help="official-layout JSON (id = sample_id, with question_type); when given, the dataset question type is used")
     parser.add_argument("--limit", type=int, default=1000)
     parser.add_argument(
         "--shuffle-seed",
         type=int,
         default=None,
-        help="按稳定哈希打乱后再取前 limit 条；不设则按文件顺序取。",
+        help="shuffle by stable hash before taking the first `limit` rows; file order otherwise.",
     )
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--num-samples", type=int, default=8)
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--top-p", type=float, default=1.0)
-    parser.add_argument("--max-new-tokens", type=int, default=None, help="默认 direct 32，其他 384")
+    parser.add_argument("--max-new-tokens", type=int, default=None, help="default: 32 in direct mode, 384 otherwise")
     parser.add_argument("--max-prompt-length", type=int, default=2048)
     parser.add_argument("--permutations", type=int, default=4)
     parser.add_argument("--skip-sampling", action="store_true")
@@ -96,21 +97,21 @@ def parse_args():
 def validate_args(args):
     for name in ("batch_size", "num_samples", "max_new_tokens", "max_prompt_length"):
         if getattr(args, name) < 1:
-            raise ValueError(f"{name} 必须大于 0")
+            raise ValueError(f"{name} must be greater than 0")
     if args.limit < 0 or args.permutations < 0:
-        raise ValueError("limit 与 permutations 不能小于 0")
+        raise ValueError("limit and permutations must not be negative")
     if args.temperature <= 0 or not 0 < args.top_p <= 1:
-        raise ValueError("temperature 必须大于 0，top_p 在 (0, 1] 之间")
+        raise ValueError("temperature must be positive and top_p in (0, 1]")
     if args.mode != MODE_DIRECT and not args.skip_constrained:
-        print("提示: 受限字母打分只对 direct 模式有意义，其他模式自动跳过。")
+        print("note: constrained letter scoring only applies to direct mode and is skipped otherwise.")
         args.skip_constrained = True
 
 
 def load_examples(path, mode, limit, shuffle_seed=None, type_hint=False, type_hint_map=None):
-    """读取 messages JSONL，按 mode 重新渲染 prompt（direct 模式下与原文一致）。
+    """Read a messages JSONL file and re-render each prompt for `mode` (identical to the source in direct mode).
 
-    shuffle_seed 不为 None 时先按稳定哈希打乱全量，再取前 limit 条，避免只抽到文件开头
-    同一考试板块的题。
+    With shuffle_seed set, rows are ordered by stable hash before `limit` is applied, so a small sample is not
+    just the first exam section of the file.
     """
     examples = []
     stats = Counter()
@@ -151,12 +152,12 @@ def load_examples(path, mode, limit, shuffle_seed=None, type_hint=False, type_hi
         stats["loaded"] = len(examples)
         stats["shuffle_seed"] = shuffle_seed
     if not examples:
-        raise ValueError(f"没有可用样本: {path}")
+        raise ValueError(f"no usable rows in {path}")
     return examples, dict(stats)
 
 
 def majority_vote(answers):
-    """多数投票；None 不参与；平票取先出现者。"""
+    """Majority vote; None is ignored; ties go to the answer seen first."""
     counts = Counter(answer for answer in answers if answer is not None)
     if not counts:
         return None
@@ -242,7 +243,7 @@ def summarize_records(records, num_samples):
 
 
 def finalize_shuffle_consistency(records, record_indexes):
-    """对每个出现过乱序变体的题，判断所有变体映射回原字母后是否都等于 greedy 答案。"""
+    """For every question with shuffled variants: do all variants, mapped back to the original letters, equal the greedy answer?"""
     for record_index in sorted(set(record_indexes)):
         record = records[record_index]
         answers = [item["answer_original_letters"] for item in record.get("permutations", [])]
@@ -257,7 +258,7 @@ def letter_token_ids(tokenizer, letters):
     for letter in letters:
         encoded = tokenizer.encode(letter, add_special_tokens=False)
         if len(encoded) != 1:
-            raise ValueError(f"字母 {letter!r} 不是单个 token，无法做受限打分: {encoded}")
+            raise ValueError(f"letter {letter!r} is not a single token; constrained scoring is impossible: {encoded}")
         ids.append(encoded[0])
     return ids
 
@@ -268,7 +269,7 @@ def load_model(args):
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     if not torch.cuda.is_available():
-        raise RuntimeError("诊断需要可用的 NVIDIA CUDA GPU")
+        raise RuntimeError("a CUDA GPU is required")
     dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
@@ -337,9 +338,9 @@ def run(args):
         args.input_file, args.mode, args.limit, args.shuffle_seed, type_hint=args.type_hint, type_hint_map=type_hint_map
     )
     load_stats["type_hint"] = bool(args.type_hint)
-    print("输入检查通过:", json.dumps(load_stats, ensure_ascii=False))
+    print("input check passed:", json.dumps(load_stats, ensure_ascii=False))
     if args.check_only:
-        print("check-only 已启用，不加载模型。")
+        print("check-only: the model is not loaded.")
         return
 
     output_dir = Path(args.output_dir)
@@ -347,12 +348,12 @@ def run(args):
     records_path = output_dir / RECORDS_FILENAME
     report_path = output_dir / REPORT_FILENAME
     if (records_path.exists() or report_path.exists()) and not args.overwrite:
-        raise FileExistsError(f"输出已存在，请换目录或 --overwrite: {output_dir}")
+        raise FileExistsError(f"output exists; choose another directory or pass --overwrite: {output_dir}")
 
     model, tokenizer, torch = load_model(args)
     torch.manual_seed(args.seed)
     device = model.device
-    print(f"GPU: {torch.cuda.get_device_name(0)}；样本数: {len(examples)}")
+    print(f"GPU: {torch.cuda.get_device_name(0)}; questions: {len(examples)}")
 
     records = []
     with records_path.open("w", encoding="utf-8") as records_file:
@@ -461,7 +462,7 @@ def run(args):
 
             for record in records[start:start + len(batch)]:
                 records_file.write(json.dumps(record, ensure_ascii=False) + "\n")
-            print(f"完成 {min(start + len(batch), len(examples))}/{len(examples)}")
+            print(f"done {min(start + len(batch), len(examples))}/{len(examples)}")
 
     report = summarize_records(records, args.num_samples)
     report["config"] = vars(args)
@@ -470,7 +471,7 @@ def run(args):
         json.dump(report, report_file, ensure_ascii=False, indent=2)
         report_file.write("\n")
     print(json.dumps(report["overall"], ensure_ascii=False, indent=2))
-    print(f"报告: {report_path}")
+    print(f"report: {report_path}")
 
 
 def main():

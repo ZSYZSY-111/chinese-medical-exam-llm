@@ -49,7 +49,7 @@ MAX_REJECTION_EXAMPLES = 5
 
 
 def configure_csv_field_limit():
-    """尽量提高 CSV 单字段上限，同时兼容不同平台的 C long 范围。"""
+    """Raise the CSV field-size limit as far as the platform's C long allows."""
     limit = sys.maxsize
     while True:
         try:
@@ -130,7 +130,7 @@ def load_normalized_questions(path):
 
 
 def load_eligible_question_keys(path, blocked_questions):
-    """加载基础题目结构有效的 key；Explanation 缺失时仍用于隔离 split。"""
+    """Keys of structurally valid questions in a split; used to keep the splits disjoint."""
     questions = set()
     with path.open("r", encoding="utf-8-sig", newline="") as fin:
         reader = csv.DictReader(fin)
@@ -154,7 +154,7 @@ def require_columns(reader, path):
     actual = set(reader.fieldnames or [])
     missing = sorted(required - actual)
     if missing:
-        raise ValueError(f"{path} 缺少字段: {missing}")
+        raise ValueError(f"{path} is missing columns: {missing}")
 
 
 def record_rejection(stats, examples, reason, line_number, row):

@@ -23,7 +23,7 @@ VALID_OPTION_SEQUENCES = {
     "ABC",
     "ABCD",
     "ABCDE",
-    "ABCDEF",  # CMB-Exam 含少量六选项题
+    "ABCDEF",  # CMB-Exam contains a few six-option questions
 }
 
 
@@ -36,7 +36,7 @@ def extract_valid_letters(messages, path="dataset", line_number=0):
     if not user_contents or not all(
         isinstance(content, str) for content in user_contents
     ):
-        raise ValueError(f"{path}:{line_number} 缺少合法 user content")
+        raise ValueError(f"{path}:{line_number} has no valid user content")
 
     labels = []
     for content in user_contents:
@@ -44,7 +44,7 @@ def extract_valid_letters(messages, path="dataset", line_number=0):
     valid_letters = "".join(dict.fromkeys(labels))
     if valid_letters not in VALID_OPTION_SEQUENCES:
         raise ValueError(
-            f"{path}:{line_number} 选项序列不合法: {valid_letters!r}"
+            f"{path}:{line_number} invalid option sequence: {valid_letters!r}"
         )
     return valid_letters
 
@@ -52,25 +52,25 @@ def extract_valid_letters(messages, path="dataset", line_number=0):
 def parse_messages_record(record, path="dataset", line_number=0):
     if not isinstance(record, dict) or set(record) != {"messages"}:
         raise ValueError(
-            f"{path}:{line_number} 每行必须且只能包含 messages"
+            f"{path}:{line_number} each row must contain exactly one key, messages"
         )
     messages = record["messages"]
     if not isinstance(messages, list) or len(messages) < 2:
-        raise ValueError(f"{path}:{line_number} messages 不合法")
+        raise ValueError(f"{path}:{line_number} invalid messages")
 
     for message in messages:
         if not isinstance(message, dict):
-            raise ValueError(f"{path}:{line_number} message 不是对象")
+            raise ValueError(f"{path}:{line_number} message is not an object")
         if message.get("role") not in {"system", "user", "assistant"}:
-            raise ValueError(f"{path}:{line_number} role 不合法")
+            raise ValueError(f"{path}:{line_number} invalid role")
         content = message.get("content")
         if not isinstance(content, str) or not content.strip():
-            raise ValueError(f"{path}:{line_number} 存在空 content")
+            raise ValueError(f"{path}:{line_number} empty content")
 
     if messages[-1].get("role") != "assistant":
-        raise ValueError(f"{path}:{line_number} 最后一条必须是 assistant")
+        raise ValueError(f"{path}:{line_number} the last message must be from the assistant")
     if any(message.get("role") == "assistant" for message in messages[:-1]):
-        raise ValueError(f"{path}:{line_number} prompt 中不能包含 assistant")
+        raise ValueError(f"{path}:{line_number} the prompt must not contain assistant messages")
 
     valid_letters = extract_valid_letters(messages[:-1], path, line_number)
     target = parse_reference_target(
@@ -96,7 +96,7 @@ def parse_messages_record(record, path="dataset", line_number=0):
 
 def validate_messages_file(path):
     if not path.is_file():
-        raise FileNotFoundError(f"找不到数据文件: {path}")
+        raise FileNotFoundError(f"data file not found: {path}")
 
     stats = Counter()
     answer_counts = Counter()
@@ -107,12 +107,12 @@ def validate_messages_file(path):
                 record = json.loads(line)
             except json.JSONDecodeError as error:
                 raise ValueError(
-                    f"{path}:{line_number} 不是合法 JSON"
+                    f"{path}:{line_number} is not valid JSON"
                 ) from error
             converted = parse_messages_record(record, str(path), line_number)
             sample_id = converted["sample_id"]
             if sample_id in seen_ids:
-                raise ValueError(f"{path}:{line_number} 出现重复 prompt")
+                raise ValueError(f"{path}:{line_number} duplicate prompt")
             seen_ids.add(sample_id)
 
             stats["samples"] += 1
@@ -124,7 +124,7 @@ def validate_messages_file(path):
             answer_counts[converted["answer"]] += 1
 
     if not stats["samples"]:
-        raise ValueError(f"数据文件为空: {path}")
+        raise ValueError(f"data file is empty: {path}")
     return {
         **dict(stats),
         "answer_counts": dict(sorted(answer_counts.items())),
@@ -154,7 +154,7 @@ def load_tokenizer(AutoTokenizer, args):
             errors.append(f"{source}: {error}")
     else:
         raise RuntimeError(
-            "无法从 adapter 或 base model 加载 tokenizer:\n"
+            "could not load a tokenizer from the adapter or the base model:\n"
             + "\n".join(errors)
         )
 

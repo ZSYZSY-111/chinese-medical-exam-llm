@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""从 Stage 3 训练集构建消融子集：数据量曲线、多选乱序副本剂量、清洗前后。每份带 manifest。
+"""Build ablation subsets from the Stage 3 training file: data-scale curve, shuffled-copy dose, cleaned vs raw.
+Every subset is written with a manifest.
 
-单位是“题”（原题 + 它的乱序副本，按题干+选项集合哈希归组）；CMExam 部分在所有变体里原样保留。
-子集按 (exam_type, question_type) 分层、按稳定哈希排序截取，因此 25% ⊂ 50% ⊂ 100%。
+The unit is a question (the original row plus its shuffled copies, grouped by stem + option-set hash); the CMExam
+component is kept unchanged in every variant. Subsets are stratified by (exam_type, question_type) and cut in
+stable-hash order, so they are nested: 25% is a subset of 50%, which is a subset of 100%.
 
   python scripts/build_ablation_sets.py --train-file data/cmb_sft_v4/cmb_sft_train.jsonl \
     --metadata data/cmb_sft_v4/cmb_sft_metadata.jsonl --audit-dir data/label_audit --output-dir data/ablation
@@ -68,7 +70,7 @@ def content_answer(row):
 
 
 def select_units(units, scale, seed):
-    """units: {unit: [rows]}（只含 CMB）。按分层 + 稳定哈希排序截取前 scale 比例，返回选中的 unit 集合。"""
+    """units: {unit: [rows]} (CMB only). Stratified, stable-hash ordered; returns the set of units in the first `scale` fraction."""
     if scale >= 1.0:
         return set(units)
     if scale <= 0.0:
@@ -85,7 +87,7 @@ def select_units(units, scale, seed):
 
 
 def extra_shuffle_copies(row, copies_total, seed):
-    """在原有 1 份副本（copy_index 0）之外，再生成 copy_index 1..copies_total-1，与 build_cmb_train_sft 的排列序列一致。"""
+    """Add copies copy_index 1..copies_total-1 on top of the existing copy (copy_index 0), continuing the permutation sequence of build_cmb_train_sft."""
     options = row["options"]
     if len(row["gold"]) < 2 or any(not text for _, text in options) or not is_shuffle_safe(options):
         return []
@@ -103,7 +105,7 @@ def extra_shuffle_copies(row, copies_total, seed):
 
 
 def load_audit(audit_dir):
-    """返回 (tie_hashes, majority_keep: {hash: content_tuple}, structural_hashes: {hash: reason})。"""
+    """Returns (tie_hashes, majority_keep: {hash: content_tuple}, structural_hashes: {hash: reason})."""
     audit = Path(audit_dir)
     ties, keep, structural = set(), {}, {}
     with open(audit / "resolutions.jsonl", encoding="utf-8") as handle:
@@ -144,7 +146,7 @@ def apply_clean(rows, audit):
 
 
 def with_type_hint(row):
-    """重渲染 user 内容，加上与官方评测对齐的题型提示；sample_id 随之改变。"""
+    """Re-render the user content with a question-type hint aligned with the official evaluation prompt; sample_id changes accordingly."""
     hint = type_hint_for(row["gold"], row.get("question_type") or None)
     messages = build_prompt_messages(row["question"], row["options"], MODE_DIRECT, hint=hint)
     messages.append({"role": "assistant", "content": row["gold"]})
@@ -209,15 +211,15 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--train-file", required=True)
     parser.add_argument("--metadata", required=True)
-    parser.add_argument("--audit-dir", help="audit_labels 输出目录；给出时生成清洗变体")
+    parser.add_argument("--audit-dir", help="label-audit output directory; when given, a cleaned variant is built")
     parser.add_argument("--output-dir", required=True)
-    parser.add_argument("--scales", default="0,0.25,0.5", help="数据量曲线的 CMB-train 比例（100%% 即 Stage 3 模型本身）")
+    parser.add_argument("--scales", default="0,0.25,0.5", help="CMB-train fractions for the scale curve (100%% is the Stage 3 model itself)")
     parser.add_argument("--dose-scale", type=float, default=0.5)
-    parser.add_argument("--dose-copies", default="0,3", help="多选乱序副本份数（1 份即 dose-scale 的数据量曲线点）")
+    parser.add_argument("--dose-copies", default="0,3", help="shuffled copies per multi-answer question (1 copy is the scale-curve point at --dose-scale)")
     parser.add_argument("--clean-scale", type=float, default=0.5)
-    parser.add_argument("--skip-defaults", action="store_true", help="不生成默认的数据量/剂量/清洗变体，只生成 --extra-variant")
+    parser.add_argument("--skip-defaults", action="store_true", help="skip the default scale / dose / clean variants; build only --extra-variant")
     parser.add_argument("--extra-variant", action="append", default=[],
-                        help="自定义变体 name:scale:copies:clean:hint，如 tagged_100:1.0:0:1:1（100%% CMB、无多选副本、清洗、题型提示）")
+                        help="custom variant name:scale:copies:clean:hint, e.g. tagged_100:1.0:0:1:1 (100%% CMB, no shuffled copies, cleaned, type hint)")
     parser.add_argument("--seed", type=int, default=42)
     return parser.parse_args(argv)
 
@@ -236,7 +238,7 @@ def main(argv=None):
         name, scale, copies, clean, hint = spec.split(":")
         scale, copies, clean, hint = float(scale), int(copies), clean == "1", hint == "1"
         if clean and audit is None:
-            raise ValueError(f"{name}: clean=1 需要 --audit-dir")
+            raise ValueError(f"{name}: clean=1 requires --audit-dir")
         built, chosen, dropped = build_variant(rows, cmb_units, scale, copies, audit if clean else None, args.seed, type_hint=hint)
         plan.append(write_variant(args.output_dir, name, built, chosen, dropped,
                                   {"scale": scale, "copies": copies, "clean": clean, "type_hint": hint}, input_hashes, args.seed))

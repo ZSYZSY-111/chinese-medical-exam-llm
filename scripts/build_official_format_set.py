@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""把直答训练集重渲染成 CMB 官方评测 prompt 的格式（system“你是一个人工智能助手。”+ 官方 user 模板），使训练与评测格式完全一致。
+"""Re-render a direct-answer training file in the official CMB evaluation prompt (the evaluator's system message
+plus the official user template), so that training and evaluation share exactly the same format.
 
-exam_type / exam_class / question_type：CMB 行按“题干 + 选项集合”哈希回查 CMB-train 原始文件；CMExam 行没有元数据，
-按 --cmexam-exam-type / --cmexam-exam-class 填，题型按答案字母数。选项按原顺序渲染，空选项渲染为 "E. "（与 eval_cmb.py 一致）。
+exam_type / exam_class / question_type: CMB rows are looked up in the raw CMB-train file by stem + option-set hash;
+CMExam rows have no metadata and use --cmexam-exam-type / --cmexam-exam-class, with the question type inferred from
+the number of answer letters. Options keep their order, and an empty option renders as "E. " exactly as in eval_cmb.py.
 """
 import argparse
 import hashlib

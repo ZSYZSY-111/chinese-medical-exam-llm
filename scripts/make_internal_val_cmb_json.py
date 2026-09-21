@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""把 messages 格式的 CMB 内部验证集还原成 CMB 官方 JSON（含 exam_class），供 eval_cmb.py 用官方 prompt 评测。
+"""Convert the messages-format validation split back to the official CMB JSON layout (including exam_class) so that
+eval_cmb.py can score it with the official prompt.
 
-按“归一化题干 + 选项集合”哈希回查 CMB-train-merge.json 取 exam_type / exam_class / exam_subject / question_type；
-输出 questions.json（官方结构，无答案）与 answers.json（[{id, answer}]）。id 直接用 64 位 sample_id，与 headroom_records 的 sample_id 完全一致。
+exam_type / exam_class / exam_subject / question_type are recovered from CMB-train-merge.json by normalised stem +
+option-set hash. Writes questions.json (official structure, no answers) and answers.json ([{id, answer}]). The id is the
+64-character sample_id, identical to the sample_id in the records written by eval_validation.py.
 """
 import argparse
 import hashlib
@@ -26,7 +28,7 @@ def sample_id_of(messages):
 
 
 def index_cmb(rows):
-    """hash -> 第一条原始行（同哈希的重复行元数据几乎相同，取第一条）。"""
+    """hash -> first raw row (duplicates under one hash carry near-identical metadata)."""
     index = {}
     for row in rows:
         option_map = row.get("option") or {}

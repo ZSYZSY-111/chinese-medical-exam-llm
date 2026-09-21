@@ -1,12 +1,12 @@
-"""CMExam 选择题 prompt 工具：解析、渲染、选项乱序、切片标注。
+"""Prompt utilities for Chinese medical multiple-choice questions: parsing, rendering, option shuffling, slice tagging.
 
-本模块只做纯文本处理，不依赖 torch / transformers，可在本地直接单测。
+Pure text processing with no torch / transformers dependency, so everything here is unit-tested on CPU.
 
-三种输出模式共用同一套题目渲染，只有 system prompt 和 user 末尾指令不同：
+Three output modes share one question rendering and differ only in the system prompt and the final user instruction:
 
-    direct    只输出答案字母（与 cmexam_data/no_explanation 完全一致）
-    cot       先写 ≤150 字解析，再写“答案：X”
-    adaptive  模型自行决定要不要写解析，最后一行必须是“答案：X”
+    direct    answer letters only (the format of all released training data)
+    cot       a short explanation (at most 150 characters) followed by a final "答案：X" line
+    adaptive  the model decides whether to explain; the last line must be "答案：X"
 """
 
 import hashlib
@@ -19,8 +19,8 @@ MODE_COT = "cot"
 MODE_ADAPTIVE = "adaptive"
 MODES = (MODE_DIRECT, MODE_COT, MODE_ADAPTIVE)
 
-# 与 cmexam_data/no_explanation 的 system / user 指令逐字一致，保证 direct 模式
-# 重新渲染后 sample_id 不变。
+# Byte-identical to the instructions in the released direct-answer data, so re-rendering a row in direct mode
+# never changes its sample_id.
 DIRECT_SYSTEM_PROMPT = (
     "你是一名医学考试答题助手。回答中国医学考试选择题。"
     "不要解释，直接输出正确选项字母；多选题按字母顺序连续输出，例如ACD。"
@@ -60,17 +60,17 @@ USER_CONTENT_PATTERN = re.compile(
     r"^题目：\n(?P<question>[\s\S]+?)\n\n选项：\n(?P<options>[\s\S]+?)\n\n"
     r"(?:提示：(?P<hint>[^\n]+)\n\n)?(?P<instruction>[^\n]+)$"
 )
-# 允许空选项文本（CMB 四选项题把 E 存成空串，评测器渲染为 "E. "），rstrip 后是 "E."
+# Empty option text is allowed: CMB stores four-option questions with an empty "E", rendered by the evaluator as "E. " ("E." after rstrip).
 OPTION_LINE_PATTERN = re.compile(r"^([A-Z])\.(?: ?(.*))?$")
 
-# 选项内容引用了其他选项或依赖顺序时，不能乱序。
+# Options that refer to other options, or to their order, must not be shuffled.
 SHUFFLE_UNSAFE_PATTERN = re.compile(
     r"(以上|上述|前述|均不|都不|均是|都是|均可|全部|所有|皆|两者|二者|三者|"
     r"其他选项|其它选项|无正确|没有正确|不确定|"
     r"[A-E]\s*[和与及、,，或+＋]\s*[A-E])"
 )
 
-# 切片启发式：只用于统计、过采样和分析，不进入模型输入。
+# Slice heuristics: used for statistics, oversampling and analysis only; never part of the model input.
 NEGATION_PATTERN = re.compile(
     r"(除外|除.{1,8}外|不正确|错误的是|不是|不包括|不属于|不宜|不应|禁忌|"
     r"不符合|无关|最不|不可能|不会出现|不需要|不必|不能)"
@@ -90,7 +90,7 @@ def stable_hash(*parts):
 
 
 def stable_fraction(*parts):
-    """把任意 key 稳定映射到 [0, 1)，用于可复现的子采样。"""
+    """Map any key to a stable value in [0, 1) for reproducible sub-sampling."""
     digest = stable_hash(*parts)
     return int(digest[:12], 16) / float(16 ** 12)
 
@@ -105,7 +105,7 @@ MULTI_TYPE_HINT = "本题是多项选择题"
 
 
 def type_hint_for(answer=None, question_type=None):
-    """与 CMB 官方评测 prompt 对齐的题型提示：优先用数据集的 question_type，否则按答案字母数推断。"""
+    """Question-type hint aligned with the official CMB prompt: use the dataset's question_type when available, otherwise infer it from the number of answer letters."""
     if question_type:
         return MULTI_TYPE_HINT if "多项" in str(question_type) else SINGLE_TYPE_HINT
     if answer is None:
@@ -121,22 +121,22 @@ def parse_options_block(block):
             continue
         match = OPTION_LINE_PATTERN.fullmatch(line)
         if match is None:
-            raise ValueError(f"选项行格式不合法: {line!r}")
+            raise ValueError(f"malformed option line: {line!r}")
         options.append((match.group(1), (match.group(2) or "").strip()))
     letters = [letter for letter, _ in options]
     expected = [chr(ord("A") + index) for index in range(len(options))]
     if not options or letters != expected:
-        raise ValueError(f"选项字母序列不合法: {''.join(letters)!r}")
+        raise ValueError(f"invalid option letter sequence: {''.join(letters)!r}")
     return options
 
 
 def parse_user_content(content):
-    """把已有 SFT 数据的 user content 拆成题干、选项、提示和指令。"""
+    """Split the user content of an SFT row into question stem, options, optional hint and instruction."""
     if not isinstance(content, str):
-        raise ValueError("user content 必须是字符串")
+        raise ValueError("user content must be a string")
     match = USER_CONTENT_PATTERN.fullmatch(content.replace("\r\n", "\n").strip())
     if match is None:
-        raise ValueError("user content 不符合“题目/选项/指令”三段结构")
+        raise ValueError("user content does not follow the question / options / instruction layout")
     question = match.group("question").strip()
     options = parse_options_block(match.group("options"))
     return {
@@ -153,7 +153,7 @@ def render_options(options):
 
 def render_user_content(question, options, mode, hint=None):
     if mode not in MODES:
-        raise ValueError(f"未知输出模式: {mode!r}")
+        raise ValueError(f"unknown output mode: {mode!r}")
     parts = [
         f"题目：\n{question}",
         f"选项：\n{render_options(options)}",
@@ -165,7 +165,7 @@ def render_user_content(question, options, mode, hint=None):
 
 
 def build_prompt_messages(question, options, mode, hint=None):
-    """只返回 system + user，不含 assistant；金答案永远不进入 prompt。"""
+    """Returns system + user messages only; the reference answer never enters the prompt."""
     return [
         {"role": "system", "content": SYSTEM_PROMPTS[mode]},
         {
@@ -182,15 +182,15 @@ def is_shuffle_safe(options):
 
 
 def make_permutation(count, *seed_parts, forbidden=()):
-    """由稳定哈希生成非恒等排列；与 forbidden 中的排列都不同时才返回。"""
+    """Non-identity permutation from a stable hash; returned only if it differs from every permutation in `forbidden`."""
     if count < 2:
-        raise ValueError("至少需要两个选项才能乱序")
+        raise ValueError("at least two options are needed to shuffle")
     forbidden = {tuple(item) for item in forbidden}
     identity = tuple(range(count))
     for attempt in range(64):
         digest = stable_hash(*seed_parts, attempt)
         order = list(range(count))
-        # Fisher–Yates，随机源取自哈希的连续字节
+        # Fisher-Yates, with randomness taken from consecutive bytes of the hash
         for index in range(count - 1, 0, -1):
             chunk = digest[(index * 4) % 56:(index * 4) % 56 + 4]
             swap_with = int(chunk, 16) % (index + 1)
@@ -198,13 +198,13 @@ def make_permutation(count, *seed_parts, forbidden=()):
         candidate = tuple(order)
         if candidate != identity and candidate not in forbidden:
             return list(candidate)
-    raise ValueError("无法生成新的非恒等排列")
+    raise ValueError("could not generate a new non-identity permutation")
 
 
 def permute_options(options, permutation):
-    """新位置 i 放原来的第 permutation[i] 个选项，并重新贴 A、B、C…。"""
+    """New position i holds the original option permutation[i]; letters are re-assigned A, B, C, ..."""
     if sorted(permutation) != list(range(len(options))):
-        raise ValueError("permutation 必须是 0..n-1 的排列")
+        raise ValueError("permutation must be a permutation of 0..n-1")
     return [
         (chr(ord("A") + new_index), options[old_index][1])
         for new_index, old_index in enumerate(permutation)
@@ -212,19 +212,19 @@ def permute_options(options, permutation):
 
 
 def remap_answer(answer, permutation):
-    """把原顺序下的答案字母映射到乱序后的字母，输出按字母排序。"""
+    """Map answer letters from the original order to the shuffled order; the result is sorted."""
     remapped = []
     for letter in answer:
         old_index = ord(letter) - ord("A")
         if old_index < 0 or old_index >= len(permutation):
-            raise ValueError(f"答案字母 {letter!r} 超出选项范围")
+            raise ValueError(f"answer letter {letter!r} is outside the option range")
         new_index = permutation.index(old_index)
         remapped.append(chr(ord("A") + new_index))
     return "".join(sorted(remapped))
 
 
 def unmap_answer(answer, permutation):
-    """把乱序后的预测字母映射回原顺序，供一致性诊断使用。"""
+    """Map predicted letters from the shuffled order back to the original order (used by the consistency diagnostic)."""
     if answer is None:
         return None
     original = []
@@ -260,7 +260,7 @@ def detect_slices(question, options, answer):
 
 
 def extract_knowledge_point(explanation):
-    """从“本题考查…”开头的官方解析中抽取知识点短语；抽不到返回 None。"""
+    """Extract the knowledge-point phrase from an official explanation that starts with "本题考查…"; None if absent."""
     if not isinstance(explanation, str):
         return None
     text = explanation.replace("\r\n", "\n").strip()
@@ -270,7 +270,7 @@ def extract_knowledge_point(explanation):
     point = match.group("point").strip().strip("“”\"'")
     if not point or len(point) > MAX_KNOWLEDGE_POINT_CHARS:
         return None
-    # 知识点里若直接写出了答案字母判定，会造成标签泄漏，直接放弃。
+    # A knowledge point that states which option is right or wrong would leak the label; discard it.
     if re.search(r"[（(][A-E](对|错)", point):
         return None
     return point
