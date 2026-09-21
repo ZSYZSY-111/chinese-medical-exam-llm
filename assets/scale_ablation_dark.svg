@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 390" width="820" height="390" font-family='system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'>
+<rect width="820" height="390" rx="10" fill="#1a1a19"/>
+<text x="28.0" y="38.0" font-size="17" font-weight="600" fill="#ffffff" text-anchor="start">Data-scale ablation</text>
+<text x="28.0" y="60.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">Held-out validation set, 3,000 questions · every point is a full retrain with identical hyper-parameters</text>
+<text x="60.0" y="98.0" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="start">Overall, official prompt</text>
+<line x1="60.0" y1="300.0" x2="360.0" y2="300.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="52.0" y="304.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">79</text>
+<line x1="60.0" y1="270.0" x2="360.0" y2="270.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="52.0" y="274.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">80</text>
+<line x1="60.0" y1="240.0" x2="360.0" y2="240.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="52.0" y="244.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">81</text>
+<line x1="60.0" y1="210.0" x2="360.0" y2="210.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="52.0" y="214.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">82</text>
+<line x1="60.0" y1="180.0" x2="360.0" y2="180.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="52.0" y="184.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">83</text>
+<line x1="60.0" y1="150.0" x2="360.0" y2="150.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="52.0" y="154.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">84</text>
+<line x1="60.0" y1="120.0" x2="360.0" y2="120.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="52.0" y="124.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">85</text>
+<text x="76.0" y="322.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="middle">0%</text>
+<text x="143.0" y="322.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="middle">25%</text>
+<text x="210.0" y="322.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="middle">50%</text>
+<text x="344.0" y="322.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="middle">100%</text>
+<text x="210.0" y="344.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">share of CMB-train used</text>
+<polyline points="76.0,239.1 143.0,198.0 210.0,179.1 344.0,168.0" fill="none" stroke="#3987e5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="1.0"/>
+<circle cx="76.0" cy="239.1" r="5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="143.0" cy="198.0" r="5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="210.0" cy="179.1" r="5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="344.0" cy="168.0" r="5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="76.0" y="227.1" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="middle">81.0</text>
+<text x="344.0" y="156.0" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="middle">83.4</text>
+<text x="470.0" y="98.0" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="start">By question type, training prompt</text>
+<line x1="470.0" y1="286.2" x2="770.0" y2="286.2" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="462.0" y="290.2" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">30</text>
+<line x1="470.0" y1="258.5" x2="770.0" y2="258.5" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="462.0" y="262.5" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">40</text>
+<line x1="470.0" y1="230.8" x2="770.0" y2="230.8" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="462.0" y="234.8" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">50</text>
+<line x1="470.0" y1="203.1" x2="770.0" y2="203.1" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="462.0" y="207.1" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">60</text>
+<line x1="470.0" y1="175.4" x2="770.0" y2="175.4" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="462.0" y="179.4" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">70</text>
+<line x1="470.0" y1="147.7" x2="770.0" y2="147.7" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="462.0" y="151.7" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">80</text>
+<line x1="470.0" y1="120.0" x2="770.0" y2="120.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="462.0" y="124.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">90</text>
+<text x="486.0" y="322.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="middle">0%</text>
+<text x="553.0" y="322.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="middle">25%</text>
+<text x="620.0" y="322.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="middle">50%</text>
+<text x="754.0" y="322.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="middle">100%</text>
+<text x="620.0" y="344.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">share of CMB-train used</text>
+<polyline points="486.0,132.8 553.0,136.2 620.0,133.6 754.0,133.4" fill="none" stroke="#3987e5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="1.0"/>
+<circle cx="486.0" cy="132.8" r="5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="553.0" cy="136.2" r="5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="620.0" cy="133.6" r="5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="754.0" cy="133.4" r="5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="486.0" y="120.8" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="middle">85.4</text>
+<text x="754.0" y="121.4" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="middle">85.2</text>
+<polyline points="486.0,284.0 553.0,234.4 620.0,233.5 754.0,221.6" fill="none" stroke="#d95926" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="1.0"/>
+<circle cx="486.0" cy="284.0" r="5" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="553.0" cy="234.4" r="5" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="620.0" cy="233.5" r="5" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="754.0" cy="221.6" r="5" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<text x="486.0" y="272.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="middle">30.8</text>
+<text x="754.0" y="209.6" font-size="12.5" font-weight="600" fill="#ffffff" text-anchor="middle">53.3</text>
+<line x1="470.0" y1="364.0" x2="488.0" y2="364.0" stroke="#3987e5" stroke-width="2" stroke-linecap="round"/>
+<circle cx="479.0" cy="364.0" r="4" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="496.0" y="368.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="start">single-answer</text>
+<line x1="611.6" y1="364.0" x2="629.6" y2="364.0" stroke="#d95926" stroke-width="2" stroke-linecap="round"/>
+<circle cx="620.6" cy="364.0" r="4" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<text x="637.6" y="368.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="start">multi-answer</text>
+</svg>

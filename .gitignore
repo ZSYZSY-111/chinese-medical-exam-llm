@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+# datasets, model weights and run outputs are never committed
+data/*
+!data/README.md
+models/
+training_outputs/
+benchmark_outputs/
+hf_cache/
+logs/
+*.safetensors
+*.bin
+.env

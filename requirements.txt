@@ -1,0 +1,10 @@
+# Keep the torch build that matches your CUDA driver; the reported runs used torch 2.8.0+cu128.
+transformers>=5.0.0,<6.0.0
+datasets>=4.0.0,<6.0.0
+accelerate>=1.0.0,<2.0.0
+peft>=0.18.0,<1.0.0
+trl==1.8.0
+safetensors>=0.4.0
+datasketch>=1.6.0      # MinHash-LSH for near-duplicate decontamination (a brute-force fallback exists)
+scipy>=1.11            # exact McNemar test in score_cmb.py
+tqdm

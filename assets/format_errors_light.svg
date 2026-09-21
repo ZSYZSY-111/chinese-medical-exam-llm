@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 380" width="820" height="380" font-family='system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'>
+<rect width="820" height="380" rx="10" fill="#fcfcfb"/>
+<text x="28.0" y="38.0" font-size="17" font-weight="600" fill="#0b0b0b" text-anchor="start">Answers that can never be correct</text>
+<text x="28.0" y="60.0" font-size="12.5" font-weight="400" fill="#52514e" text-anchor="start">Share of validation outputs with the wrong number of letters for the question type</text>
+<line x1="70.0" y1="290.0" x2="770.0" y2="290.0" stroke="#c3c2b7" stroke-width="1" stroke-linecap="butt"/>
+<text x="60.0" y="294.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">0%</text>
+<line x1="70.0" y1="252.0" x2="770.0" y2="252.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="60.0" y="256.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">10%</text>
+<line x1="70.0" y1="214.0" x2="770.0" y2="214.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="60.0" y="218.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">20%</text>
+<line x1="70.0" y1="176.0" x2="770.0" y2="176.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="60.0" y="180.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">30%</text>
+<line x1="70.0" y1="138.0" x2="770.0" y2="138.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="60.0" y="142.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">40%</text>
+<line x1="70.0" y1="100.0" x2="770.0" y2="100.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="60.0" y="104.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">50%</text>
+<path d="M131.5,290.0 V290.0 Q131.5,287.0 134.5,287.0 H152.5 Q155.5,287.0 155.5,290.0 V290.0 Z" fill="#2a78d6"/>
+<text x="143.5" y="279.0" font-size="12" font-weight="400" fill="#0b0b0b" text-anchor="middle">0.8%</text>
+<path d="M159.5,290.0 V126.8 Q159.5,122.8 163.5,122.8 H179.5 Q183.5,122.8 183.5,126.8 V290.0 Z" fill="#eb6834"/>
+<text x="171.5" y="114.8" font-size="12" font-weight="600" fill="#0b0b0b" text-anchor="middle">44%</text>
+<text x="157.5" y="312.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="middle">CMExam only,</text>
+<text x="157.5" y="328.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="middle">training prompt</text>
+<path d="M306.5,290.0 V285.3 Q306.5,281.3 310.5,281.3 H326.5 Q330.5,281.3 330.5,285.3 V290.0 Z" fill="#2a78d6"/>
+<text x="318.5" y="273.3" font-size="12" font-weight="400" fill="#0b0b0b" text-anchor="middle">2.3%</text>
+<path d="M334.5,290.0 V248.8 Q334.5,244.8 338.5,244.8 H354.5 Q358.5,244.8 358.5,248.8 V290.0 Z" fill="#eb6834"/>
+<text x="346.5" y="236.8" font-size="12" font-weight="600" fill="#0b0b0b" text-anchor="middle">11.9%</text>
+<text x="332.5" y="312.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="middle">+ CMB-train,</text>
+<text x="332.5" y="328.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="middle">training prompt</text>
+<text x="493.5" y="282.0" font-size="12" font-weight="400" fill="#0b0b0b" text-anchor="middle">0%</text>
+<path d="M509.5,290.0 V275.0 Q509.5,271.0 513.5,271.0 H529.5 Q533.5,271.0 533.5,275.0 V290.0 Z" fill="#eb6834"/>
+<text x="521.5" y="263.0" font-size="12" font-weight="400" fill="#0b0b0b" text-anchor="middle">5%</text>
+<text x="507.5" y="312.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="middle">+ CMB-train,</text>
+<text x="507.5" y="328.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="middle">official prompt</text>
+<text x="668.5" y="282.0" font-size="12" font-weight="400" fill="#0b0b0b" text-anchor="middle">0%</text>
+<text x="696.5" y="282.0" font-size="12" font-weight="400" fill="#0b0b0b" text-anchor="middle">0%</text>
+<text x="682.5" y="312.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="middle">type-aligned</text>
+<text x="682.5" y="328.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="middle">training</text>
+<rect x="70" y="350" width="12" height="12" rx="3" fill="#2a78d6"/>
+<text x="88.0" y="360.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="start">single-answer question, several letters output</text>
+<rect x="441.2" y="350" width="12" height="12" rx="3" fill="#eb6834"/>
+<text x="459.2" y="360.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="start">multi-answer question, one letter output</text>
+</svg>

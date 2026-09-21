@@ -1,0 +1,16 @@
+{
+  "run": "stage2_lora_soup",
+  "method": "PEFT add_weighted_adapter(combination_type='cat')",
+  "components": [
+    [
+      "stage1_sft_cmexam",
+      0.5
+    ],
+    [
+      "stage2_shuffle_aug_r64",
+      0.5
+    ]
+  ],
+  "merged_rank": 80,
+  "weights_selected_on": "held-out validation set; one test evaluation"
+}

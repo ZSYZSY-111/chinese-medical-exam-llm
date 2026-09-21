@@ -1,0 +1,96 @@
+{
+  "set": "held-out CMB-train split, 3,000 questions (2,698 single-answer, 302 multi-answer); never used for training",
+  "scale_curve": {
+    "x_fraction_of_cmb_train": [
+      0,
+      0.25,
+      0.5,
+      1.0
+    ],
+    "official_prompt_overall": [
+      81.03,
+      82.4,
+      83.03,
+      83.4
+    ],
+    "training_prompt_overall": [
+      79.87,
+      80.57,
+      81.47,
+      81.97
+    ],
+    "training_prompt_single": [
+      85.36,
+      84.14,
+      85.1,
+      85.17
+    ],
+    "training_prompt_multi": [
+      30.79,
+      48.68,
+      49.01,
+      53.31
+    ]
+  },
+  "prompt_template_effect": {
+    "model": "Stage 3",
+    "training_prompt": 81.97,
+    "official_prompt": 83.4,
+    "delta": 1.43,
+    "delta_ci95": [
+      0.63,
+      2.23
+    ],
+    "mcnemar_p": 0.00049,
+    "single_training_prompt": 85.17,
+    "single_official_prompt": 86.88,
+    "multi_training_prompt": 53.31,
+    "multi_official_prompt": 52.32
+  },
+  "invalid_format_outputs_pct": {
+    "rows": [
+      "Stage 1 data only",
+      "Stage 3",
+      "Stage 3 + official prompt",
+      "type-aligned training"
+    ],
+    "single_answer_questions_with_multi_letter_output": [
+      0.8,
+      2.3,
+      0.0,
+      0.0
+    ],
+    "multi_answer_questions_with_single_letter_output": [
+      44.0,
+      11.9,
+      5.0,
+      0.0
+    ]
+  },
+  "evaluation_noise": {
+    "repeat_run_answer_changes_pct": 0.0,
+    "batch32_vs_batch8_answer_changes_pct": 0.67,
+    "batch32_vs_batch8_delta": 0.07,
+    "batch32_vs_batch8_delta_ci95": [
+      -0.17,
+      0.33
+    ]
+  },
+  "minimum_detectable_effect_pp": [
+    {
+      "n": 11200,
+      "discordance": 0.02,
+      "mde": 0.37
+    },
+    {
+      "n": 11200,
+      "discordance": 0.064,
+      "mde": 0.67
+    },
+    {
+      "n": 3000,
+      "discordance": 0.05,
+      "mde": 1.13
+    }
+  ]
+}

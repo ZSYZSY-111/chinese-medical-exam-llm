@@ -1,0 +1,539 @@
+{
+  "benchmark": "CMB-Exam test (11,200 questions), official zero-shot prompt, greedy decoding, exact letter-set match",
+  "stages": [
+    {
+      "key": "base",
+      "name": "Qwen2.5-7B-Instruct (zero-shot)",
+      "note": "no fine-tuning",
+      "n": 11200,
+      "correct": 8824,
+      "accuracy": 78.79,
+      "ci95": [
+        78.02,
+        79.53
+      ],
+      "by_question_type": {
+        "C型选择题": {
+          "n": 11,
+          "correct": 7,
+          "accuracy": 63.64,
+          "ci95": [
+            35.38,
+            84.83
+          ]
+        },
+        "单项选择题": {
+          "n": 9999,
+          "correct": 8265,
+          "accuracy": 82.66,
+          "ci95": [
+            81.9,
+            83.39
+          ]
+        },
+        "多项选择题": {
+          "n": 1190,
+          "correct": 552,
+          "accuracy": 46.39,
+          "ci95": [
+            43.57,
+            49.23
+          ]
+        }
+      },
+      "by_exam_type": {
+        "医技考试": {
+          "n": 1200,
+          "correct": 907,
+          "accuracy": 75.58,
+          "ci95": [
+            73.07,
+            77.93
+          ]
+        },
+        "药师考试": {
+          "n": 3200,
+          "correct": 2608,
+          "accuracy": 81.5,
+          "ci95": [
+            80.12,
+            82.81
+          ]
+        },
+        "医师考试": {
+          "n": 2000,
+          "correct": 1593,
+          "accuracy": 79.65,
+          "ci95": [
+            77.83,
+            81.36
+          ]
+        },
+        "专业知识考试": {
+          "n": 1600,
+          "correct": 1177,
+          "accuracy": 73.56,
+          "ci95": [
+            71.35,
+            75.67
+          ]
+        },
+        "护理考试": {
+          "n": 1600,
+          "correct": 1390,
+          "accuracy": 86.88,
+          "ci95": [
+            85.13,
+            88.44
+          ]
+        },
+        "医学考研": {
+          "n": 1600,
+          "correct": 1149,
+          "accuracy": 71.81,
+          "ci95": [
+            69.56,
+            73.96
+          ]
+        }
+      }
+    },
+    {
+      "key": "sft_cmexam",
+      "name": "Stage 1 · direct-answer SFT on decontaminated CMExam",
+      "note": "LoRA r=16, 52k questions",
+      "n": 11200,
+      "correct": 9222,
+      "accuracy": 82.34,
+      "ci95": [
+        81.62,
+        83.03
+      ],
+      "by_question_type": {
+        "C型选择题": {
+          "n": 11,
+          "correct": 9,
+          "accuracy": 81.82,
+          "ci95": [
+            52.3,
+            94.86
+          ]
+        },
+        "单项选择题": {
+          "n": 9999,
+          "correct": 8700,
+          "accuracy": 87.01,
+          "ci95": [
+            86.34,
+            87.65
+          ]
+        },
+        "多项选择题": {
+          "n": 1190,
+          "correct": 513,
+          "accuracy": 43.11,
+          "ci95": [
+            40.32,
+            45.94
+          ]
+        }
+      },
+      "by_exam_type": {
+        "医技考试": {
+          "n": 1200,
+          "correct": 978,
+          "accuracy": 81.5,
+          "ci95": [
+            79.2,
+            83.6
+          ]
+        },
+        "药师考试": {
+          "n": 3200,
+          "correct": 2752,
+          "accuracy": 86.0,
+          "ci95": [
+            84.75,
+            87.16
+          ]
+        },
+        "医师考试": {
+          "n": 2000,
+          "correct": 1660,
+          "accuracy": 83.0,
+          "ci95": [
+            81.29,
+            84.58
+          ]
+        },
+        "专业知识考试": {
+          "n": 1600,
+          "correct": 1222,
+          "accuracy": 76.38,
+          "ci95": [
+            74.23,
+            78.39
+          ]
+        },
+        "护理考试": {
+          "n": 1600,
+          "correct": 1432,
+          "accuracy": 89.5,
+          "ci95": [
+            87.9,
+            90.91
+          ]
+        },
+        "医学考研": {
+          "n": 1600,
+          "correct": 1178,
+          "accuracy": 73.62,
+          "ci95": [
+            71.41,
+            75.73
+          ]
+        }
+      }
+    },
+    {
+      "key": "soup",
+      "name": "Stage 2 · option-shuffle augmentation + LoRA weight averaging",
+      "note": "0.5/0.5 average of the Stage-1 adapter and a shuffle-augmented r=64 adapter",
+      "n": 11200,
+      "correct": 9279,
+      "accuracy": 82.85,
+      "ci95": [
+        82.14,
+        83.54
+      ],
+      "by_question_type": {
+        "多项选择题": {
+          "n": 1190,
+          "correct": 570,
+          "accuracy": 47.9,
+          "ci95": [
+            45.07,
+            50.74
+          ]
+        },
+        "单项选择题": {
+          "n": 9999,
+          "correct": 8700,
+          "accuracy": 87.01,
+          "ci95": [
+            86.34,
+            87.65
+          ]
+        },
+        "C型选择题": {
+          "n": 11,
+          "correct": 9,
+          "accuracy": 81.82,
+          "ci95": [
+            52.3,
+            94.86
+          ]
+        }
+      },
+      "by_exam_type": {
+        "医学考研": {
+          "n": 1600,
+          "correct": 1207,
+          "accuracy": 75.44,
+          "ci95": [
+            73.27,
+            77.48
+          ]
+        },
+        "医师考试": {
+          "n": 2000,
+          "correct": 1675,
+          "accuracy": 83.75,
+          "ci95": [
+            82.07,
+            85.3
+          ]
+        },
+        "医技考试": {
+          "n": 1200,
+          "correct": 987,
+          "accuracy": 82.25,
+          "ci95": [
+            79.99,
+            84.31
+          ]
+        },
+        "专业知识考试": {
+          "n": 1600,
+          "correct": 1229,
+          "accuracy": 76.81,
+          "ci95": [
+            74.68,
+            78.81
+          ]
+        },
+        "护理考试": {
+          "n": 1600,
+          "correct": 1437,
+          "accuracy": 89.81,
+          "ci95": [
+            88.23,
+            91.2
+          ]
+        },
+        "药师考试": {
+          "n": 3200,
+          "correct": 2744,
+          "accuracy": 85.75,
+          "ci95": [
+            84.5,
+            86.92
+          ]
+        }
+      }
+    },
+    {
+      "key": "cmb_train",
+      "name": "Stage 3 · + decontaminated CMB-train (in-domain scale-up)",
+      "note": "LoRA r=64, 294k rows",
+      "n": 11200,
+      "correct": 9442,
+      "accuracy": 84.3,
+      "ci95": [
+        83.62,
+        84.97
+      ],
+      "by_question_type": {
+        "多项选择题": {
+          "n": 1190,
+          "correct": 732,
+          "accuracy": 61.51,
+          "ci95": [
+            58.72,
+            64.24
+          ]
+        },
+        "单项选择题": {
+          "n": 9999,
+          "correct": 8702,
+          "accuracy": 87.03,
+          "ci95": [
+            86.36,
+            87.67
+          ]
+        },
+        "C型选择题": {
+          "n": 11,
+          "correct": 8,
+          "accuracy": 72.73,
+          "ci95": [
+            43.44,
+            90.25
+          ]
+        }
+      },
+      "by_exam_type": {
+        "医学考研": {
+          "n": 1600,
+          "correct": 1327,
+          "accuracy": 82.94,
+          "ci95": [
+            81.02,
+            84.7
+          ]
+        },
+        "专业知识考试": {
+          "n": 1600,
+          "correct": 1260,
+          "accuracy": 78.75,
+          "ci95": [
+            76.68,
+            80.68
+          ]
+        },
+        "药师考试": {
+          "n": 3200,
+          "correct": 2777,
+          "accuracy": 86.78,
+          "ci95": [
+            85.56,
+            87.91
+          ]
+        },
+        "医师考试": {
+          "n": 2000,
+          "correct": 1670,
+          "accuracy": 83.5,
+          "ci95": [
+            81.81,
+            85.06
+          ]
+        },
+        "医技考试": {
+          "n": 1200,
+          "correct": 979,
+          "accuracy": 81.58,
+          "ci95": [
+            79.29,
+            83.67
+          ]
+        },
+        "护理考试": {
+          "n": 1600,
+          "correct": 1429,
+          "accuracy": 89.31,
+          "ci95": [
+            87.7,
+            90.73
+          ]
+        }
+      }
+    },
+    {
+      "key": "final",
+      "name": "Final check · question-type-aligned prompts, cleaned data",
+      "note": "selected on validation; single test run",
+      "n": 11200,
+      "correct": 9445,
+      "accuracy": 84.33,
+      "ci95": [
+        83.65,
+        84.99
+      ],
+      "by_question_type": {
+        "单项选择题": {
+          "n": 9999,
+          "correct": 8724,
+          "accuracy": 87.25,
+          "ci95": [
+            86.58,
+            87.89
+          ]
+        },
+        "C型选择题": {
+          "n": 11,
+          "correct": 8,
+          "accuracy": 72.73,
+          "ci95": [
+            43.44,
+            90.25
+          ]
+        },
+        "多项选择题": {
+          "n": 1190,
+          "correct": 713,
+          "accuracy": 59.92,
+          "ci95": [
+            57.1,
+            62.66
+          ]
+        }
+      },
+      "by_exam_type": {
+        "护理考试": {
+          "n": 1600,
+          "correct": 1443,
+          "accuracy": 90.19,
+          "ci95": [
+            88.63,
+            91.55
+          ]
+        },
+        "医技考试": {
+          "n": 1200,
+          "correct": 984,
+          "accuracy": 82.0,
+          "ci95": [
+            79.73,
+            84.07
+          ]
+        },
+        "专业知识考试": {
+          "n": 1600,
+          "correct": 1266,
+          "accuracy": 79.12,
+          "ci95": [
+            77.07,
+            81.05
+          ]
+        },
+        "医师考试": {
+          "n": 2000,
+          "correct": 1674,
+          "accuracy": 83.7,
+          "ci95": [
+            82.02,
+            85.25
+          ]
+        },
+        "医学考研": {
+          "n": 1600,
+          "correct": 1322,
+          "accuracy": 82.62,
+          "ci95": [
+            80.69,
+            84.4
+          ]
+        },
+        "药师考试": {
+          "n": 3200,
+          "correct": 2756,
+          "accuracy": 86.12,
+          "ci95": [
+            84.88,
+            87.28
+          ]
+        }
+      }
+    }
+  ],
+  "paired_comparisons": {
+    "sft_cmexam_vs_base": {
+      "delta_pp": 3.55,
+      "improved": 796,
+      "regressed": 398,
+      "mcnemar_p": 4.187113999980741e-31,
+      "delta_ci95": [
+        2.96,
+        4.15
+      ]
+    },
+    "soup_vs_sft_cmexam": {
+      "delta_pp": 0.51,
+      "improved": 154,
+      "regressed": 97,
+      "mcnemar_p": 0.00038754273134235424,
+      "delta_ci95": [
+        0.24,
+        0.79
+      ]
+    },
+    "cmb_train_vs_sft_cmexam": {
+      "delta_pp": 1.96,
+      "improved": 469,
+      "regressed": 249,
+      "mcnemar_p": 1.756723702887758e-16,
+      "delta_ci95": [
+        1.5,
+        2.43
+      ]
+    },
+    "cmb_train_vs_soup": {
+      "delta_pp": 1.46,
+      "improved": 410,
+      "regressed": 247,
+      "mcnemar_p": 2.1232723629402896e-10,
+      "delta_ci95": null
+    },
+    "final_vs_cmb_train": {
+      "delta_pp": 0.03,
+      "improved": 246,
+      "regressed": 243,
+      "mcnemar_p": 0.9279472703216494,
+      "delta_ci95": [
+        -0.35,
+        0.41
+      ]
+    }
+  }
+}

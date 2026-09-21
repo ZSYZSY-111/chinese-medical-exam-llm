@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 330" width="820" height="330" font-family='system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'>
+<rect width="820" height="330" rx="10" fill="#fcfcfb"/>
+<text x="28.0" y="38.0" font-size="17" font-weight="600" fill="#0b0b0b" text-anchor="start">CMB-Exam test accuracy by training stage</text>
+<text x="28.0" y="60.0" font-size="12.5" font-weight="400" fill="#52514e" text-anchor="start">11,200 questions · official zero-shot prompt · exact letter-set match · bars show 95% Wilson intervals</text>
+<line x1="330.0" y1="86.0" x2="330.0" y2="272.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="330.0" y="292.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">77</text>
+<line x1="378.9" y1="86.0" x2="378.9" y2="272.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="378.9" y="292.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">78</text>
+<line x1="427.8" y1="86.0" x2="427.8" y2="272.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="427.8" y="292.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">79</text>
+<line x1="476.7" y1="86.0" x2="476.7" y2="272.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="476.7" y="292.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">80</text>
+<line x1="525.6" y1="86.0" x2="525.6" y2="272.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="525.6" y="292.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">81</text>
+<line x1="574.4" y1="86.0" x2="574.4" y2="272.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="574.4" y="292.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">82</text>
+<line x1="623.3" y1="86.0" x2="623.3" y2="272.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="623.3" y="292.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">83</text>
+<line x1="672.2" y1="86.0" x2="672.2" y2="272.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="672.2" y="292.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">84</text>
+<line x1="721.1" y1="86.0" x2="721.1" y2="272.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="721.1" y="292.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">85</text>
+<line x1="770.0" y1="86.0" x2="770.0" y2="272.0" stroke="#e1e0d9" stroke-width="1" stroke-linecap="butt"/>
+<text x="770.0" y="292.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">86</text>
+<text x="770.0" y="314.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">accuracy (%)</text>
+<text x="28.0" y="104.0" font-size="13" font-weight="400" fill="#0b0b0b" text-anchor="start">Qwen2.5-7B-Instruct, zero-shot</text>
+<line x1="379.9" y1="100.0" x2="453.7" y2="100.0" stroke="#9ec5f4" stroke-width="6" stroke-linecap="round"/>
+<circle cx="417.5" cy="100.0" r="6" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<text x="417.5" y="87.0" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="middle">78.79</text>
+<text x="28.0" y="154.0" font-size="13" font-weight="400" fill="#0b0b0b" text-anchor="start">Stage 1  SFT on decontaminated CMExam</text>
+<line x1="555.9" y1="150.0" x2="624.8" y2="150.0" stroke="#9ec5f4" stroke-width="6" stroke-linecap="round"/>
+<circle cx="591.1" cy="150.0" r="6" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<text x="591.1" y="137.0" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="middle">82.34</text>
+<text x="636.8" y="154.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="start">+3.55</text>
+<text x="28.0" y="204.0" font-size="13" font-weight="400" fill="#0b0b0b" text-anchor="start">Stage 2  + option shuffling, LoRA averaging</text>
+<line x1="581.3" y1="200.0" x2="649.7" y2="200.0" stroke="#9ec5f4" stroke-width="6" stroke-linecap="round"/>
+<circle cx="616.0" cy="200.0" r="6" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<text x="616.0" y="187.0" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="middle">82.85</text>
+<text x="661.7" y="204.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="start">+0.51</text>
+<text x="28.0" y="254.0" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="start">Stage 3  + decontaminated CMB-train</text>
+<line x1="653.6" y1="250.0" x2="719.6" y2="250.0" stroke="#9ec5f4" stroke-width="6" stroke-linecap="round"/>
+<circle cx="686.9" cy="250.0" r="6" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<text x="686.9" y="237.0" font-size="13" font-weight="600" fill="#0b0b0b" text-anchor="middle">84.30</text>
+<text x="731.6" y="254.0" font-size="12" font-weight="400" fill="#52514e" text-anchor="start">+1.46</text>
+</svg>

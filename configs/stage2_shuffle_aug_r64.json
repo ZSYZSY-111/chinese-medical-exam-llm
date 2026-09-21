@@ -1,0 +1,36 @@
+{
+  "run": "stage2_shuffle_aug_r64",
+  "base_model": "Qwen/Qwen2.5-7B-Instruct",
+  "arguments": {
+    "max_length": 768,
+    "num_train_epochs": 1.0,
+    "learning_rate": 2e-05,
+    "warmup_ratio": 0.03,
+    "weight_decay": 0.01,
+    "per_device_train_batch_size": 16,
+    "gradient_accumulation_steps": 2,
+    "lora_r": 64,
+    "lora_alpha": 128,
+    "lora_dropout": 0.05,
+    "seed": 42,
+    "loss_mode": "completion",
+    "gradient_checkpointing": true,
+    "packing": false
+  },
+  "resolved": {
+    "training_method": "lora",
+    "base_model_quantized": false,
+    "train_samples": 101984,
+    "eval_samples": 2000,
+    "compute_dtype": "torch.bfloat16",
+    "gpu": "NVIDIA GeForce RTX 5090"
+  },
+  "versions": {
+    "torch": "2.8.0+cu128",
+    "transformers": "5.13.1",
+    "datasets": "5.0.0",
+    "accelerate": "1.14.0",
+    "peft": "0.19.1",
+    "trl": "1.8.0"
+  }
+}
