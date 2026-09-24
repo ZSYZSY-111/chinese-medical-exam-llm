@@ -56,6 +56,18 @@ USER_SUFFIXES = {
     MODE_ADAPTIVE: ADAPTIVE_USER_SUFFIX,
 }
 
+# The prompt used by the rationale-style SFT data (rationale, then "答案：X"), byte-for-byte. It is only used to
+# evaluate and continue training adapters trained on that data (cot mode); new training uses the mode prompts above.
+STYLE_LEGACY_EXPLAIN = "legacy_explain"
+PROMPT_STYLES = (STYLE_LEGACY_EXPLAIN,)
+LEGACY_EXPLAIN_SYSTEM_PROMPT = (
+    "你是一名医学考试答题助手。回答中国医学考试选择题。"
+    "请先给出医学解析，再在最后给出正确选项字母；"
+    "多选题按字母顺序连续输出。严格使用以下格式：\n"
+    "解析：具体解析\n答案：X"
+)
+LEGACY_EXPLAIN_USER_SUFFIX = "请先给出医学解析，再在最后输出正确选项字母。"
+
 USER_CONTENT_PATTERN = re.compile(
     r"^题目：\n(?P<question>[\s\S]+?)\n\n选项：\n(?P<options>[\s\S]+?)\n\n"
     r"(?:提示：(?P<hint>[^\n]+)\n\n)?(?P<instruction>[^\n]+)$"
@@ -151,26 +163,38 @@ def render_options(options):
     return "\n".join(f"{letter}. {text}" for letter, text in options)
 
 
-def render_user_content(question, options, mode, hint=None):
+def _check_style(mode, style):
+    if style is None:
+        return
+    if style not in PROMPT_STYLES:
+        raise ValueError(f"unknown prompt style: {style!r}")
+    if mode != MODE_COT:
+        raise ValueError(f"prompt style {style!r} only applies to cot mode (rationale, then answer)")
+
+
+def render_user_content(question, options, mode, hint=None, style=None):
     if mode not in MODES:
         raise ValueError(f"unknown output mode: {mode!r}")
+    _check_style(mode, style)
     parts = [
         f"题目：\n{question}",
         f"选项：\n{render_options(options)}",
     ]
     if hint:
         parts.append(f"提示：{hint}")
-    parts.append(USER_SUFFIXES[mode])
+    parts.append(LEGACY_EXPLAIN_USER_SUFFIX if style == STYLE_LEGACY_EXPLAIN else USER_SUFFIXES[mode])
     return "\n\n".join(parts)
 
 
-def build_prompt_messages(question, options, mode, hint=None):
+def build_prompt_messages(question, options, mode, hint=None, style=None):
     """Returns system + user messages only; the reference answer never enters the prompt."""
+    _check_style(mode, style)
+    system = LEGACY_EXPLAIN_SYSTEM_PROMPT if style == STYLE_LEGACY_EXPLAIN else SYSTEM_PROMPTS[mode]
     return [
-        {"role": "system", "content": SYSTEM_PROMPTS[mode]},
+        {"role": "system", "content": system},
         {
             "role": "user",
-            "content": render_user_content(question, options, mode, hint),
+            "content": render_user_content(question, options, mode, hint, style),
         },
     ]
 

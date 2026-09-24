@@ -67,6 +67,7 @@ def parse_args():
     parser.add_argument("--mode", choices=MODES, default=MODE_DIRECT)
     parser.add_argument("--type-hint", action="store_true", help="add a question-type hint to the prompt, aligned with the official evaluation prompt; inferred from the number of reference letters by default")
     parser.add_argument("--type-hint-file", default=None, help="official-layout JSON (id = sample_id, with question_type); when given, the dataset question type is used")
+    parser.add_argument("--prompt-style", choices=["legacy_explain"], default=None, help="legacy_explain: render with the prompt of the rationale-style SFT data (cot mode only), so adapters trained on it are evaluated in their own format")
     parser.add_argument("--limit", type=int, default=1000)
     parser.add_argument(
         "--shuffle-seed",
@@ -107,7 +108,7 @@ def validate_args(args):
         args.skip_constrained = True
 
 
-def load_examples(path, mode, limit, shuffle_seed=None, type_hint=False, type_hint_map=None):
+def load_examples(path, mode, limit, shuffle_seed=None, type_hint=False, type_hint_map=None, prompt_style=None):
     """Read a messages JSONL file and re-render each prompt for `mode` (identical to the source in direct mode).
 
     With shuffle_seed set, rows are ordered by stable hash before `limit` is applied, so a small sample is not
@@ -141,7 +142,8 @@ def load_examples(path, mode, limit, shuffle_seed=None, type_hint=False, type_hi
                     "shuffle_safe": slices["shuffle_safe"],
                     "type_hint": type_hint_for(converted["answer"], (type_hint_map or {}).get(converted["sample_id"])) if type_hint else None,
                     "messages": build_prompt_messages(parsed["question"], parsed["options"], mode,
-                                                      hint=type_hint_for(converted["answer"], (type_hint_map or {}).get(converted["sample_id"])) if type_hint else None),
+                                                      hint=type_hint_for(converted["answer"], (type_hint_map or {}).get(converted["sample_id"])) if type_hint else None,
+                                                      style=prompt_style),
                 }
             )
             stats["loaded"] += 1
@@ -335,9 +337,11 @@ def run(args):
         with open(args.type_hint_file, encoding="utf-8") as handle:
             type_hint_map = {str(item["id"]): item.get("question_type") for item in json.load(handle)}
     examples, load_stats = load_examples(
-        args.input_file, args.mode, args.limit, args.shuffle_seed, type_hint=args.type_hint, type_hint_map=type_hint_map
+        args.input_file, args.mode, args.limit, args.shuffle_seed, type_hint=args.type_hint, type_hint_map=type_hint_map,
+        prompt_style=args.prompt_style,
     )
     load_stats["type_hint"] = bool(args.type_hint)
+    load_stats["prompt_style"] = args.prompt_style
     print("input check passed:", json.dumps(load_stats, ensure_ascii=False))
     if args.check_only:
         print("check-only: the model is not loaded.")
@@ -433,7 +437,7 @@ def run(args):
                         shuffle_batch.append(
                             build_prompt_messages(
                                 example["question"], permute_options(example["options"], permutation), args.mode,
-                                hint=example.get("type_hint")
+                                hint=example.get("type_hint"), style=args.prompt_style
                             )
                         )
                         shuffle_meta.append((start + index, permutation))
