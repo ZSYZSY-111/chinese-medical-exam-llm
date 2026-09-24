@@ -1,0 +1,115 @@
+{
+  "_note": "Provider settings for the annotation/synthesis harness. Prices are the provider's peak-hour list prices in CNY per million tokens as of 2026-09 and only feed the dry-run estimate; the harness bills from the returned usage. The API key is read from the environment variable named in api_key_env and is never written anywhere. Both DeepSeek models default to thinking mode, which the harness disables via extra_body because only short outputs are needed.",
+  "providers": {
+    "teacher": {
+      "type": "openai_compatible",
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-v4-pro",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "temperature": 0.7,
+      "max_tokens": 320,
+      "timeout": 600,
+      "max_retries": 3,
+      "prices_cny_per_million": {
+        "input": 9.504,
+        "input_cache_hit": 0.317,
+        "output": 28.512
+      },
+      "extra_body": {
+        "thinking": {
+          "type": "disabled"
+        }
+      }
+    },
+    "verifier": {
+      "type": "openai_compatible",
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-v4-pro",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "temperature": 0.0,
+      "max_tokens": 16,
+      "timeout": 600,
+      "max_retries": 3,
+      "prices_cny_per_million": {
+        "input": 9.504,
+        "input_cache_hit": 0.317,
+        "output": 28.512
+      },
+      "extra_body": {
+        "thinking": {
+          "type": "disabled"
+        }
+      }
+    },
+    "flash": {
+      "type": "openai_compatible",
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-v4-pro",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "temperature": 0.7,
+      "max_tokens": 320,
+      "timeout": 600,
+      "max_retries": 3,
+      "prices_cny_per_million": {
+        "input": 9.504,
+        "input_cache_hit": 0.317,
+        "output": 28.512
+      },
+      "extra_body": {
+        "thinking": {
+          "type": "disabled"
+        }
+      }
+    },
+    "scorer": {
+      "type": "openai_compatible",
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-v4-pro",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "temperature": 0.0,
+      "max_tokens": 200,
+      "timeout": 120,
+      "max_retries": 3,
+      "prices_cny_per_million": {
+        "input": 9.504,
+        "input_cache_hit": 0.317,
+        "output": 28.512
+      },
+      "extra_body": {
+        "thinking": {
+          "type": "disabled"
+        }
+      }
+    }
+  },
+  "tasks": {
+    "rationale": {
+      "provider": "teacher",
+      "max_chars": 150
+    },
+    "paraphrase": {
+      "provider": "flash",
+      "verifier": "verifier",
+      "min_similarity": 0.0,
+      "max_similarity": 0.85
+    },
+    "statement": {
+      "provider": "flash",
+      "max_chars": 120,
+      "min_answer_coverage": 0.6
+    },
+    "sentence_score": {
+      "provider": "scorer",
+      "min_chars": 8,
+      "level": "clause"
+    }
+  },
+  "budget": {
+    "max_cost_cny": 20
+  },
+  "decontam": {
+    "threshold": 0.7,
+    "min_chars": 20,
+    "num_perm": 128
+  }
+}
