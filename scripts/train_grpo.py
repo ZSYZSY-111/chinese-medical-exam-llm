@@ -6,7 +6,7 @@ Design choices, each independently switchable:
   * --prompts-per-step controls how many questions each optimizer step sees
   * clip-higher（epsilon / epsilon_high）、scale_rewards=none（Dr.GRPO）、KL-free
   * rewards assembled per --reward-mode direct|cot|adaptive (see grpo_rewards.py)
-  * optional vLLM colocated generation, entropy regularisation, transformers continuous batching
+  * optional entropy regularisation
   * every GRPOConfig field is checked against the installed TRL before construction; a missing field is an error, not a silent drop
 
 Data: messages-format JSONL such as the pool written by build_cot_rl_pool.py (cot mode) or the direct-answer
@@ -87,64 +87,19 @@ def prepare_datasets(load_dataset, args):
     return train_dataset, eval_dataset
 
 
-def load_policy_model(
-    AutoModelForCausalLM,
-    BitsAndBytesConfig,
-    PeftConfig,
-    PeftModel,
-    prepare_model_for_kbit_training,
-    torch,
-    args,
-    compute_dtype,
-):
-    adapter_config = PeftConfig.from_pretrained(
-        args.adapter,
-        local_files_only=args.local_files_only,
+def load_policy_model(AutoModelForCausalLM, PeftModel, torch, args, compute_dtype):
+    """Load the bf16 base model and the LoRA adapter to continue training (is_trainable=True)."""
+    base_model = AutoModelForCausalLM.from_pretrained(
+        args.model, dtype=compute_dtype, use_cache=False, local_files_only=args.local_files_only,
     )
-    configured_base = getattr(
-        adapter_config,
-        "base_model_name_or_path",
-        None,
-    )
-    if configured_base and str(configured_base) != str(args.model):
+    model = PeftModel.from_pretrained(base_model, args.adapter, is_trainable=True, local_files_only=args.local_files_only)
+    adapter_config = model.peft_config["default"]
+    configured_base = getattr(adapter_config, "base_model_name_or_path", None)
+    if configured_base and configured_base != args.model:
         print(
             "note: the adapter_config base model is "
             f"{configured_base!r}; loading {args.model!r} as requested."
         )
-
-    model_kwargs = {
-        "dtype": compute_dtype,
-        "use_cache": False,
-        "local_files_only": args.local_files_only,
-    }
-    if args.load_in_4bit:
-        model_kwargs["quantization_config"] = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_compute_dtype=compute_dtype,
-        )
-        local_rank = int(os.environ.get("LOCAL_RANK", "0"))
-        model_kwargs["device_map"] = {"": local_rank}
-
-    base_model = AutoModelForCausalLM.from_pretrained(
-        args.model,
-        **model_kwargs,
-    )
-    if args.load_in_4bit:
-        base_model = prepare_model_for_kbit_training(
-            base_model,
-            use_gradient_checkpointing=args.gradient_checkpointing,
-        )
-    base_model.config.use_cache = False
-
-    model = PeftModel.from_pretrained(
-        base_model,
-        args.adapter,
-        is_trainable=True,
-        local_files_only=args.local_files_only,
-    )
-    model.config.use_cache = False
     return model, adapter_config
 
 
@@ -205,12 +160,6 @@ def parse_args():
     parser.add_argument("--entropy-target", type=float, default=0.2)
 
     # generation backend
-    parser.add_argument("--use-vllm", action="store_true")
-    parser.add_argument("--vllm-gpu-memory-utilization", type=float, default=0.3)
-    parser.add_argument("--vllm-sleep-mode", action="store_true")
-    parser.add_argument("--vllm-max-model-length", type=int, default=2048)
-    parser.add_argument("--vllm-is-correction", action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument("--transformers-continuous-batching", action="store_true")
 
     # misc
     parser.add_argument("--logging-steps", type=int, default=1)
@@ -222,7 +171,6 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--report-to", default="none")
     parser.add_argument("--resume-from-checkpoint", default=None)
-    parser.add_argument("--load-in-4bit", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--gradient-checkpointing", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--log-completions", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--local-files-only", action="store_true")
@@ -302,10 +250,6 @@ def validate_args(args):
         raise ValueError("beta and entropy_coef must not be negative")
     if args.per_device_eval_batch_size % args.num_generations_eval != 0:
         raise ValueError("per_device_eval_batch_size must be divisible by num_generations_eval")
-    if args.use_vllm and args.transformers_continuous_batching:
-        raise ValueError("--use-vllm and --transformers-continuous-batching are mutually exclusive")
-    if args.use_vllm and args.load_in_4bit:
-        raise ValueError("vLLM colocated generation does not support a 4-bit base model")
     if args.max_eval_samples and args.max_eval_samples % args.per_device_eval_batch_size != 0:
         print(
             "note: max_eval_samples is not a multiple of per_device_eval_batch_size; "
@@ -389,19 +333,6 @@ def build_grpo_config_kwargs(args, geometry, output_dir, use_bf16, reward_weight
         kwargs["entropy_coef"] = args.entropy_coef
         kwargs["use_adaptive_entropy"] = args.adaptive_entropy
         kwargs["entropy_target"] = args.entropy_target
-    if args.use_vllm:
-        kwargs.update(
-            {
-                "use_vllm": True,
-                "vllm_mode": "colocate",
-                "vllm_gpu_memory_utilization": args.vllm_gpu_memory_utilization,
-                "vllm_enable_sleep_mode": args.vllm_sleep_mode,
-                "vllm_max_model_length": args.vllm_max_model_length,
-                "vllm_importance_sampling_correction": args.vllm_is_correction,
-            }
-        )
-    if args.transformers_continuous_batching:
-        kwargs["use_transformers_continuous_batching"] = True
     return kwargs
 
 
@@ -546,8 +477,8 @@ def main():
         import transformers
         import trl
         from datasets import load_dataset
-        from peft import PeftConfig, PeftModel, prepare_model_for_kbit_training
-        from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+        from peft import PeftModel
+        from transformers import AutoModelForCausalLM, AutoTokenizer
         from trl import GRPOConfig, GRPOTrainer
     except ImportError as error:
         raise RuntimeError("GRPO dependencies are missing: pip install -r requirements.txt") from error
@@ -557,20 +488,11 @@ def main():
     use_bf16 = bool(torch.cuda.is_bf16_supported())
     compute_dtype = torch.bfloat16 if use_bf16 else torch.float16
     print(f"GPU: {torch.cuda.get_device_name(0)}")
-    print(f"precision: {'bf16' if use_bf16 else 'fp16'}; 4-bit: {args.load_in_4bit}")
+    print(f"precision: {'bf16' if use_bf16 else 'fp16'}")
 
     train_dataset, eval_dataset = prepare_datasets(load_dataset, args)
     tokenizer = load_tokenizer(AutoTokenizer, args)
-    model, adapter_config = load_policy_model(
-        AutoModelForCausalLM,
-        BitsAndBytesConfig,
-        PeftConfig,
-        PeftModel,
-        prepare_model_for_kbit_training,
-        torch,
-        args,
-        compute_dtype,
-    )
+    model, adapter_config = load_policy_model(AutoModelForCausalLM, PeftModel, torch, args, compute_dtype)
     model.print_trainable_parameters()
 
     reward_functions, reward_weights = build_reward_functions(reward_config)

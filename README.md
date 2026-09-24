@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](requirements.txt)
-[![Tests](https://img.shields.io/badge/tests-114%20passing-brightgreen.svg)](tests)
+[![Tests](https://img.shields.io/badge/tests-107%20passing-brightgreen.svg)](tests)
 [![Hardware](https://img.shields.io/badge/hardware-1%C3%97%20RTX%205090%2032GB-lightgrey.svg)](#reproduce)
 
 </div>
@@ -203,7 +203,7 @@ Two negative results belong here as well: synthetic questions and statements wri
 git clone https://github.com/ZSYZSY-111/chinese-medical-exam-llm.git
 cd chinese-medical-exam-llm
 pip install -r requirements.txt          # keep the torch build that matches your CUDA
-python -m unittest discover -s tests -t . # 114 tests, no GPU or data needed
+python -m unittest discover -s tests -t . # 107 tests, no GPU or data needed
 ```
 
 Datasets are not redistributed; [`data/README.md`](data/README.md) explains where to get CMExam and CMB, how to build every training file, and how to rebuild the segment-scored rows from the released scores. Then:
@@ -246,7 +246,7 @@ tests/       unit tests for all data, reward, credit-assignment and scoring code
 | `eval_cmb.py`, `score_cmb.py` | official-prompt evaluation and paired comparison |
 | `score_predictions.py` | Wilson and bootstrap intervals, exact McNemar, minimum detectable effect |
 | `eval_validation.py` | validation accuracy in direct or rationale mode, permutation consistency, optional type hint |
-| `build_ablation_sets.py`, `build_official_format_set.py` | nested ablation subsets, prompt-format variants |
+| `build_ablation_sets.py`, `make_internal_val_cmb_json.py` | nested ablation subsets; validation split in the official CMB format |
 
 ## Limitations
 

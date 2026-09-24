@@ -98,12 +98,6 @@ def make_args(**overrides):
         "entropy_coef": 0.0,
         "adaptive_entropy": False,
         "entropy_target": 0.2,
-        "use_vllm": False,
-        "vllm_gpu_memory_utilization": 0.3,
-        "vllm_sleep_mode": False,
-        "vllm_max_model_length": 2048,
-        "vllm_is_correction": True,
-        "transformers_continuous_batching": False,
         "logging_steps": 1,
         "eval_steps": 50,
         "save_steps": 50,
@@ -113,7 +107,6 @@ def make_args(**overrides):
         "seed": 42,
         "report_to": "none",
         "resume_from_checkpoint": None,
-        "load_in_4bit": False,
         "gradient_checkpointing": True,
         "log_completions": True,
         "local_files_only": False,
@@ -154,10 +147,6 @@ class GeometryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_args(make_args(epsilon_high=0.1))
         with self.assertRaises(ValueError):
-            validate_args(make_args(use_vllm=True, transformers_continuous_batching=True))
-        with self.assertRaises(ValueError):
-            validate_args(make_args(use_vllm=True, load_in_4bit=True))
-        with self.assertRaises(ValueError):
             validate_args(make_args(per_device_eval_batch_size=3, num_generations_eval=2))
         self.assertEqual(validate_args(make_args())["completions_per_step"], 256)
 
@@ -174,20 +163,18 @@ class ConfigTests(unittest.TestCase):
     def test_all_config_keys_exist_in_real_dataclasses(self):
         for overrides in (
             {},
-            {"reward_mode": MODE_ADAPTIVE, "use_vllm": True, "vllm_sleep_mode": True},
+            {"reward_mode": MODE_ADAPTIVE},
             {"reward_mode": MODE_COT, "entropy_coef": 0.001, "adaptive_entropy": True},
-            {"transformers_continuous_batching": True},
         ):
             args = make_args(**overrides)
             geometry = validate_args(args)
             kwargs = build_grpo_config_kwargs(args, geometry, Path("out"), True, [0.95, 0.05])
             unknown = sorted(key for key in kwargs if key not in KNOWN_FIELDS)
-            self.assertEqual(unknown, [], f"未知字段: {unknown}")
+            self.assertEqual(unknown, [], f"unknown GRPOConfig fields: {unknown}")
             self.assertEqual(kwargs["epsilon_high"], 0.28)
             self.assertEqual(kwargs["scale_rewards"], "none")
             self.assertEqual(kwargs["beta"], 0.0)
             self.assertEqual(kwargs["gradient_accumulation_steps"], 16)
-            self.assertEqual("use_vllm" in kwargs, bool(overrides.get("use_vllm")))
             self.assertEqual("entropy_coef" in kwargs, "entropy_coef" in overrides)
 
     def test_warmup_field_adapts_to_installed_transformers(self):

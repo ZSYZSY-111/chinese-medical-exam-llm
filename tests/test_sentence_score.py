@@ -105,10 +105,10 @@ class SentenceScoreTaskTests(unittest.TestCase):
         self.assertEqual(task.parse_stage1("打分如下：\n```json\n[2,5,1]\n```"), {"scores": [2, 5, 1]})
         self.assertIsNone(task.parse_stage1("无法判断"))
         items, _ = load_items(self.path)
-        ok = task.filters(items[0], {"scores": [1, 3, 5, 2]}, None, {})
+        ok = task.filters(items[0], {"scores": [1, 3, 5, 2]}, {})
         self.assertTrue(all(passed for passed, _ in ok.values()))
-        self.assertFalse(task.filters(items[0], {"scores": [2, 5]}, None, {})["count_matches"][0])
-        self.assertFalse(task.filters(items[0], {"scores": [2, 5, 9, 1]}, None, {})["range_ok"][0])
+        self.assertFalse(task.filters(items[0], {"scores": [2, 5]}, {})["count_matches"][0])
+        self.assertFalse(task.filters(items[0], {"scores": [2, 5, 9, 1]}, {})["range_ok"][0])
 
     def test_full_run_exports_spans_with_scores(self):
         items, _ = load_items(self.path)
@@ -133,6 +133,61 @@ class SentenceScoreTaskTests(unittest.TestCase):
         self.assertEqual([s["score"] for s in row["sentences"]], [1, 3, 5, 2])
         self.assertEqual("".join(row["explanation"][s["start"]:s["end"]] for s in row["sentences"]), row["explanation"])
         self.assertEqual(row["messages"][-1]["content"], f"解析：{EXPLANATION}\n答案：A")
+
+
+class HarnessBehaviourTests(unittest.TestCase):
+    """Budget cap, hard refusal of evaluation stems, and the response cache, exercised through the scoring task."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.path = Path(self.tmp.name) / "train.jsonl"
+        with open(self.path, "w", encoding="utf-8") as handle:
+            for i in range(6):
+                handle.write(json.dumps(explained_record(f"第{i}道社区获得性肺炎的题目，首选抗生素是", "A"), ensure_ascii=False) + "\n")
+        self.items, _ = load_items(self.path)
+        self.task = SentenceScoreTask(CONFIG["tasks"]["sentence_score"])
+        self.calls = 0
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def responder(self, messages):
+        self.calls += 1
+        return "[1, 3, 5, 2]"
+
+    def test_budget_stops_new_requests(self):
+        selected, _ = select_items(self.items)
+        budget = Budget({"input": 1e6, "output": 1e6}, max_cost_cny=0.5)   # every call costs about 1 CNY
+        cache = ResponseCache(str(Path(self.tmp.name) / "cache.jsonl"))
+        _, exports, funnels = run(CONFIG, selected, [self.task], {"scorer": FakeProvider(self.responder)}, budget, cache, workers=1)
+        funnel = funnels["sentence_score"]
+        self.assertGreater(funnel["budget_stopped"], 0)
+        self.assertEqual(funnel["kept"] + funnel["budget_stopped"], 6)
+        self.assertEqual(len(exports["sentence_score"]), funnel["kept"])
+
+    def test_refusal_is_hard_inside_run(self):
+        selected, _ = select_items(self.items)
+        blocked = frozenset({selected[0]["stem_hash"]})
+        with self.assertRaises(RuntimeError):
+            run(CONFIG, selected, [self.task], {"scorer": FakeProvider(self.responder)}, Budget({}, 100), None, 1, exclude_hashes=blocked)
+        self.assertEqual(self.calls, 0)
+
+    def test_select_items_refuses_and_dedupes(self):
+        blocked = frozenset({self.items[0]["stem_hash"]})
+        selected, counts = select_items(self.items + [self.items[1]], limit=0, exclude_hashes=blocked)
+        self.assertEqual(counts["refused_reference_overlap"], 1)
+        self.assertEqual(counts["duplicate_stem_skipped"], 1)
+        self.assertEqual(len(selected), 5)
+
+    def test_cache_makes_a_rerun_free(self):
+        selected, _ = select_items(self.items)
+        cache_path = str(Path(self.tmp.name) / "cache.jsonl")
+        for expected_calls, expected_cost in ((6, True), (6, False)):
+            budget = Budget({"input": 2.0, "output": 3.0}, 100)
+            _, _, funnels = run(CONFIG, selected, [self.task], {"scorer": FakeProvider(self.responder)}, budget, ResponseCache(cache_path), workers=2)
+            self.assertEqual(self.calls, expected_calls)
+            self.assertEqual(funnels["sentence_score"]["cost_cny"] > 0, expected_cost)
+        self.assertEqual(funnels["sentence_score"]["cache_hits"], 6)
 
 
 if __name__ == "__main__":
