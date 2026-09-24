@@ -1,0 +1,113 @@
+{
+  "_note": "Recorded arguments of the three segment-supervision SFT arms (scripts/train_sft_score_head.py). Same data, seed and hyper-parameters; only the loss differs.",
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "train_file": "data/segment_scores/sft/train.jsonl",
+  "dev_file": "data/segment_scores/sft/dev.jsonl",
+  "arms": {
+    "control": {
+      "arguments": {
+        "score_loss_weight": 0.0,
+        "sentence_weighting": "none",
+        "cot_loss_weight": 0.2,
+        "answer_loss_weight": 0.8,
+        "lora_r": 16,
+        "lora_alpha": 32,
+        "lora_dropout": 0.05,
+        "learning_rate": 1e-05,
+        "head_learning_rate": 0.001,
+        "warmup_ratio": 0.05,
+        "weight_decay": 0.01,
+        "num_train_epochs": 2.0,
+        "per_device_train_batch_size": 8,
+        "gradient_accumulation_steps": 4,
+        "max_length": 2560,
+        "max_train_samples": 0,
+        "loss_logit_chunk_size": 256,
+        "logging_steps": 10,
+        "seed": 42,
+        "check_only": false
+      },
+      "resolved": {
+        "train_samples": 9484,
+        "train_dropped_overlength": 0,
+        "dev_samples": 500,
+        "train_sentences": 105710,
+        "gpu": "NVIDIA GeForce RTX 5090"
+      },
+      "versions": {
+        "torch": "2.8.0+cu128",
+        "transformers": "5.13.1"
+      }
+    },
+    "predict": {
+      "arguments": {
+        "score_loss_weight": 1.0,
+        "sentence_weighting": "none",
+        "cot_loss_weight": 0.2,
+        "answer_loss_weight": 0.8,
+        "lora_r": 16,
+        "lora_alpha": 32,
+        "lora_dropout": 0.05,
+        "learning_rate": 1e-05,
+        "head_learning_rate": 0.001,
+        "warmup_ratio": 0.05,
+        "weight_decay": 0.01,
+        "num_train_epochs": 2.0,
+        "per_device_train_batch_size": 8,
+        "gradient_accumulation_steps": 4,
+        "max_length": 2560,
+        "max_train_samples": 0,
+        "loss_logit_chunk_size": 256,
+        "logging_steps": 10,
+        "seed": 42,
+        "check_only": false
+      },
+      "resolved": {
+        "train_samples": 9484,
+        "train_dropped_overlength": 0,
+        "dev_samples": 500,
+        "train_sentences": 105710,
+        "gpu": "NVIDIA GeForce RTX 5090"
+      },
+      "versions": {
+        "torch": "2.8.0+cu128",
+        "transformers": "5.13.1"
+      }
+    },
+    "weighted": {
+      "arguments": {
+        "score_loss_weight": 0.0,
+        "sentence_weighting": "score",
+        "cot_loss_weight": 0.2,
+        "answer_loss_weight": 0.8,
+        "lora_r": 16,
+        "lora_alpha": 32,
+        "lora_dropout": 0.05,
+        "learning_rate": 1e-05,
+        "head_learning_rate": 0.001,
+        "warmup_ratio": 0.05,
+        "weight_decay": 0.01,
+        "num_train_epochs": 2.0,
+        "per_device_train_batch_size": 8,
+        "gradient_accumulation_steps": 4,
+        "max_length": 2560,
+        "max_train_samples": 0,
+        "loss_logit_chunk_size": 256,
+        "logging_steps": 10,
+        "seed": 42,
+        "check_only": false
+      },
+      "resolved": {
+        "train_samples": 9484,
+        "train_dropped_overlength": 0,
+        "dev_samples": 500,
+        "train_sentences": 105710,
+        "gpu": "NVIDIA GeForce RTX 5090"
+      },
+      "versions": {
+        "torch": "2.8.0+cu128",
+        "transformers": "5.13.1"
+      }
+    }
+  }
+}
