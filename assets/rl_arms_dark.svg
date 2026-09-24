@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 380" width="940" height="380" font-family='system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'>
+<rect width="940" height="380" rx="10" fill="#1a1a19"/>
+<text x="28.0" y="38.0" font-size="17" font-weight="600" fill="#ffffff" text-anchor="start">Rationale-then-answer accuracy on the CMExam validation split</text>
+<text x="28.0" y="60.0" font-size="12.5" font-weight="400" fill="#c3c2b7" text-anchor="start">6,657 questions · greedy · exact letter-set match · bars show 95% Wilson intervals · deltas are paired</text>
+<line x1="380.0" y1="86.0" x2="380.0" y2="322.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="380.0" y="342.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">72</text>
+<line x1="438.6" y1="86.0" x2="438.6" y2="322.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="438.6" y="342.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">74</text>
+<line x1="497.1" y1="86.0" x2="497.1" y2="322.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="497.1" y="342.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">76</text>
+<line x1="555.7" y1="86.0" x2="555.7" y2="322.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="555.7" y="342.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">78</text>
+<line x1="614.3" y1="86.0" x2="614.3" y2="322.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="614.3" y="342.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">80</text>
+<line x1="672.9" y1="86.0" x2="672.9" y2="322.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="672.9" y="342.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">82</text>
+<line x1="731.4" y1="86.0" x2="731.4" y2="322.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="731.4" y="342.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">84</text>
+<line x1="790.0" y1="86.0" x2="790.0" y2="322.0" stroke="#2c2c2a" stroke-width="1" stroke-linecap="butt"/>
+<text x="790.0" y="342.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="middle">86</text>
+<text x="790.0" y="364.0" font-size="11.5" font-weight="400" fill="#898781" text-anchor="end">accuracy (%)</text>
+<text x="28.0" y="104.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">SFT · control (rationale LM loss only)</text>
+<line x1="474.6" y1="100.0" x2="534.3" y2="100.0" stroke="#184f95" stroke-width="6" stroke-linecap="round"/>
+<circle cx="505.0" cy="100.0" r="6" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="505.0" y="87.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="middle">76.27</text>
+<text x="28.0" y="154.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">SFT · + auxiliary head predicting segment scores</text>
+<line x1="399.6" y1="150.0" x2="461.7" y2="150.0" stroke="#184f95" stroke-width="6" stroke-linecap="round"/>
+<circle cx="431.0" cy="150.0" r="6" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="431.0" y="137.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="middle">73.74</text>
+<text x="473.7" y="154.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="start">-2.52</text>
+<text x="28.0" y="204.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">SFT · segment scores as loss weights  (RL start)</text>
+<line x1="511.2" y1="200.0" x2="569.8" y2="200.0" stroke="#184f95" stroke-width="6" stroke-linecap="round"/>
+<circle cx="541.1" cy="200.0" r="6" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="541.1" y="187.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="middle">77.50</text>
+<text x="581.8" y="204.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="start">+1.23</text>
+<text x="28.0" y="254.0" font-size="13" font-weight="400" fill="#ffffff" text-anchor="start">GRPO · standard, 150 steps</text>
+<line x1="666.4" y1="250.0" x2="719.7" y2="250.0" stroke="#184f95" stroke-width="6" stroke-linecap="round"/>
+<circle cx="693.6" cy="250.0" r="6" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<text x="693.6" y="237.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="middle">82.71</text>
+<text x="731.7" y="254.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="start">+5.21 vs RL start</text>
+<text x="28.0" y="304.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="start">GRPO · segment credit, 150 steps</text>
+<line x1="697.2" y1="300.0" x2="749.0" y2="300.0" stroke="#184f95" stroke-width="6" stroke-linecap="round"/>
+<circle cx="723.5" cy="300.0" r="6" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<text x="723.5" y="287.0" font-size="13" font-weight="600" fill="#ffffff" text-anchor="middle">83.73</text>
+<text x="761.0" y="304.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="start">+1.02 vs standard</text>
+<line x1="28.0" y1="360.0" x2="46.0" y2="360.0" stroke="#3987e5" stroke-width="2" stroke-linecap="round"/>
+<circle cx="37.0" cy="360.0" r="4" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<text x="54.0" y="364.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="start">SFT arms</text>
+<line x1="133.6" y1="360.0" x2="151.6" y2="360.0" stroke="#d95926" stroke-width="2" stroke-linecap="round"/>
+<circle cx="142.6" cy="360.0" r="4" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<text x="159.6" y="364.0" font-size="12" font-weight="400" fill="#c3c2b7" text-anchor="start">GRPO arms</text>
+</svg>

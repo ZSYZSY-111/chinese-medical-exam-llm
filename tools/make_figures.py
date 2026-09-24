@@ -209,10 +209,72 @@ def fig_loss(theme, name):
     svg.save(ASSETS / f"training_loss_{name}.svg")
 
 
+def fig_rl_arms(theme, name):
+    """Rationale-mode validation accuracy of the SFT arms and the GRPO arms, with 95% Wilson intervals."""
+    sft = json.loads((RESULTS / "segment_weighted_sft.json").read_text(encoding="utf-8"))
+    rl = json.loads((RESULTS / "segment_credit_grpo.json").read_text(encoding="utf-8"))
+    rows = [
+        ("SFT · control (rationale LM loss only)", sft["rationale_mode"]["control"], "", 400),
+        ("SFT · + auxiliary head predicting segment scores", sft["rationale_mode"]["predict"], f'{sft["paired_rationale_mode"]["predict_vs_control"]["delta"]:+.2f}', 400),
+        ("SFT · segment scores as loss weights  (RL start)", sft["rationale_mode"]["weighted"], f'{sft["paired_rationale_mode"]["weighted_vs_control"]["delta"]:+.2f}', 400),
+        ("GRPO · standard, 150 steps", rl["arms"]["g0_standard_grpo"], f'{rl["paired"]["g0_vs_start"]["delta"]:+.2f} vs RL start', 400),
+        ("GRPO · segment credit, 150 steps", rl["arms"]["g2_segment_credit_grpo"], f'{rl["paired"]["g2_vs_g0"]["delta"]:+.2f} vs standard', 600),
+    ]
+    svg = Svg(940, 380, theme)
+    title(svg, "Rationale-then-answer accuracy on the CMExam validation split", "6,657 questions · greedy · exact letter-set match · bars show 95% Wilson intervals · deltas are paired")
+    left, right, top, row = 380, 790, 100, 50
+    lo, hi = 72, 86
+    for tick in range(72, 87, 2):
+        x = scale(tick, lo, hi, left, right)
+        svg.line(x, top - 14, x, top + row * 4 + 22, stroke="grid")
+        svg.text(x, top + row * 4 + 42, f"{tick}", size=11.5, fill="muted", anchor="middle")
+    svg.text(right, top + row * 4 + 64, "accuracy (%)", size=11.5, fill="muted", anchor="end")
+    for i, (label, arm, delta, weight) in enumerate(rows):
+        y = top + i * row
+        colour = "s2" if i >= 3 else "s1"
+        soft = "s1_soft"
+        svg.text(28, y + 4, label, size=13, fill="ink", weight=weight)
+        x0, x1 = (scale(v, lo, hi, left, right) for v in arm["ci95"])
+        x = scale(arm["accuracy"], lo, hi, left, right)
+        svg.line(x0, y, x1, y, stroke=soft, width=6, cap="round")
+        svg.dot(x, y, colour, r=6)
+        svg.text(x, y - 13, f'{arm["accuracy"]:.2f}', size=13, weight=600, anchor="middle")
+        if delta:
+            svg.text(x1 + 12, y + 4, delta, size=12, fill="ink2")
+    svg.legend(28, top + row * 4 + 64, [("SFT arms", "s1", "line"), ("GRPO arms", "s2", "line")])
+    svg.save(ASSETS / f"rl_arms_{name}.svg")
+
+
+def fig_rl_dynamics(theme, name):
+    """Share of completion tokens that carry a non-zero advantage, standard GRPO vs segment credit, over training."""
+    rl = json.loads((RESULTS / "segment_credit_grpo.json").read_text(encoding="utf-8"))
+    g0 = [(r["step"], 1.0 - r["frac_reward_zero_std"]) for r in rl["training_curves"]["g0"] if r["frac_reward_zero_std"] is not None]
+    g2 = [(r["step"], r["token_frac_nonzero_adv"]) for r in rl["training_curves"]["g2"] if r["token_frac_nonzero_adv"] is not None]
+    svg = Svg(860, 360, theme)
+    title(svg, "How much of each training step carries a learning signal", "share of sampled tokens whose advantage is non-zero · 16 prompts × 8 samples per step · 150 steps")
+    left, right, top, bottom = 70, 820, 90, 290
+    for tick in range(0, 101, 25):
+        y = scale(tick, 0, 100, bottom, top)
+        svg.line(left, y, right, y, stroke="grid")
+        svg.text(left - 10, y + 4, f"{tick}%", size=11.5, fill="muted", anchor="end")
+    for tick in range(0, 151, 30):
+        x = scale(tick, 0, 150, left, right)
+        svg.text(x, bottom + 20, f"{tick}", size=11.5, fill="muted", anchor="middle")
+    svg.text(right, bottom + 40, "training step", size=11.5, fill="muted", anchor="end")
+    for series, colour in ((g0, "s1"), (g2, "s2")):
+        pts = [(scale(s, 0, 150, left, right), scale(100 * v, 0, 100, bottom, top)) for s, v in series]
+        svg.polyline(pts, colour, width=2)
+        svg.dot(*pts[-1], colour, r=4)
+    svg.text(scale(150, 0, 150, left, right) + 8, scale(100 * g2[-1][1], 0, 100, bottom, top) + 4, f"{100 * g2[-1][1]:.0f}%", size=12, fill="ink2")
+    svg.text(scale(150, 0, 150, left, right) + 8, scale(100 * g0[-1][1], 0, 100, bottom, top) + 4, f"{100 * g0[-1][1]:.0f}%", size=12, fill="ink2")
+    svg.legend(left, bottom + 40, [("standard GRPO (group not unanimous)", "s1", "plain"), ("segment credit (advantage + segment credit ≠ 0)", "s2", "plain")])
+    svg.save(ASSETS / f"rl_dynamics_{name}.svg")
+
+
 def main():
     ASSETS.mkdir(exist_ok=True)
     for name, theme in THEMES.items():
-        for fig in (fig_stages, fig_question_types, fig_scale, fig_format, fig_loss):
+        for fig in (fig_stages, fig_question_types, fig_scale, fig_format, fig_loss, fig_rl_arms, fig_rl_dynamics):
             fig(theme, name)
     print("wrote", len(list(ASSETS.glob("*.svg"))), "SVG files to", ASSETS)
 
