@@ -1,6 +1,8 @@
 <div align="center">
 
-# Chinese Medical Exam LLM
+# Segment-Credit GRPO
+
+### Dense credit assignment from the policy's own confidence
 
 **Qwen2.5-7B-Instruct from 78.8 to 84.3 on CMB-Exam on one consumer GPU, and a GRPO variant that assigns credit inside a rationale from the policy's own confidence: +1.0 over standard GRPO at equal budget, with no teacher and no reward model.**
 
@@ -200,8 +202,8 @@ Two negative results belong here as well: synthetic questions and statements wri
 ## Reproduce
 
 ```bash
-git clone https://github.com/ZSYZSY-111/chinese-medical-exam-llm.git
-cd chinese-medical-exam-llm
+git clone https://github.com/ZSYZSY-111/segment-credit-grpo.git
+cd segment-credit-grpo
 pip install -r requirements.txt          # keep the torch build that matches your CUDA
 python -m unittest discover -s tests -t . # 107 tests, no GPU or data needed
 ```
