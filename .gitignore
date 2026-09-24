@@ -13,3 +13,7 @@ logs/
 *.safetensors
 *.bin
 .env
+
+# released labels (no question text): segment scores of official rationales
+!data/segment_scores/
+!data/segment_scores/*
